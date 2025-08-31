@@ -18,3 +18,4 @@ scratchpad/*
 
 # Client
 stats.html
+packages/client/src/routeTree.gen.ts

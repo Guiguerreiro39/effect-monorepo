@@ -27,7 +27,11 @@
     "format": "prettier --write \"**/*.{js,ts,mjs,jsx,tsx,json,md,css,html,yaml,yml,mdx}\"",
     "format:check": "prettier --check \"**/*.{js,ts,mjs,jsx,tsx,json,md,css,html,yaml,yml,mdx}\"",
     "coverage": "vitest --coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "client:dev": "bun --filter @org/client dev",
+    "server:dev": "bun --filter @org/server dev",
+    "db:studio": "bun --filter @org/database db:studio",
+    "db:push": "bun --filter @org/database db:push"
   },
   "devDependencies": {
     "@babel/cli": "^7.28.3",
@@ -65,5 +69,24 @@
     "typescript": "^5.9.2",
     "vitest": "^2.1.9",
     "read-package-up": "^11.0.0"
+  },
+  "overrides": {
+    "vitest": "^2.1.9",
+    "effect": "3.14.16",
+    "@effect/rpc": "0.56.6",
+    "@effect/platform": "0.80.16",
+    "@effect/platform-browser": "0.60.9",
+    "@effect/experimental": "0.44.16",
+    "@effect/opentelemetry": "0.45.6",
+    "@effect/platform-node": "0.77.4",
+    "@effect/cluster": "0.30.4",
+    "@effect/sql": "0.33.16",
+    "@effect/build-utils": "0.7.9",
+    "@effect/eslint-plugin": "0.3.0",
+    "@effect/language-service": "0.9.1",
+    "@effect/vitest": "0.20.17"
+  },
+  "patchedDependencies": {
+    "babel-plugin-annotate-pure-calls@0.4.0": "patches/babel-plugin-annotate-pure-calls@0.4.0.patch"
   }
 }

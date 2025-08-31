@@ -87,7 +87,7 @@ const makeService = (config: Config) =>
             connectionTimeoutMillis: 0,
           }),
       ),
-      (pool) => Effect.promise(() => pool.end()),
+      (conn) => Effect.promise(() => conn.end()),
     );
 
     yield* Effect.tryPromise(() => pool.query("SELECT 1")).pipe(
