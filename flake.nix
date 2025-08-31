@@ -19,7 +19,7 @@
             corepack
             bun
             nodejs_22
-            nodePackages.pnpm
+            nodePackages.bun
             postgresql
             git
           ];
