@@ -14,17 +14,18 @@ export class EnvVars extends Effect.Service<EnvVars>()("EnvVars", {
   effect: Effect.gen(function* () {
     return {
       // Server
-      PORT: yield* Config.integer("PORT").pipe(Config.withDefault(3000)),
       ENV: yield* Config.literal("dev", "prod", "staging")("ENV").pipe(Config.withDefault("dev")),
       APP_URL: (yield* Config.url("APP_URL").pipe(Config.withDefault("http://localhost:5173")))
         .toString()
         .replace(TRAILING_SLASH_REGEX, "")
         .replace(PROTOCOL_REGEX, "http://"),
 
-      // Observability
-      OTLP_URL: yield* Config.url("OTLP_URL").pipe(
-        Config.withDefault("http://jaeger:4318/v1/traces"),
-      ),
+      // Database
+      DATABASE_URL: yield* Config.redacted("DATABASE_URL"),
+
+      // Github
+      GITHUB_CLIENT_ID: yield* Config.string("GITHUB_CLIENT_ID"),
+      GITHUB_CLIENT_SECRET: yield* Config.redacted("GITHUB_CLIENT_SECRET"),
     } as const;
   }),
 }) {}

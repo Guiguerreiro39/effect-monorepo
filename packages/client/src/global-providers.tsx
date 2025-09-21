@@ -20,7 +20,14 @@ import { type LiveManagedRuntime } from "./services/live-layer";
 import { RuntimeProvider } from "./services/runtime/runtime-provider";
 import { WorkerClient } from "./services/worker/worker-client";
 
-const router = createRouter({ routeTree });
+const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+  scrollRestoration: true,
+  context: {
+    session: null,
+  },
+});
 
 declare module "@tanstack/react-router" {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions

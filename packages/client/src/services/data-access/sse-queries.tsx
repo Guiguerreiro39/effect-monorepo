@@ -7,7 +7,7 @@ import * as Option from "effect/Option";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
-import * as React from "react";
+import React from "react";
 import { ApiClient } from "../common/api-client";
 import { NetworkMonitor } from "../common/network-monitor";
 import { useRuntime } from "../runtime/use-runtime";

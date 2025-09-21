@@ -22,6 +22,8 @@
     "check": "tsc -b tsconfig.json",
     "test": "vitest",
     "coverage": "vitest --coverage",
+    "auth:generate": "npx @better-auth/cli generate --output ./src/tables/auth-table.ts --config ./src/lib/auth.config.ts --yes",
+    "auth:migrate": "npx @better-auth/cli migrate --config ./src/lib/auth.config.ts --yes",
     "db:generate": "NODE_OPTIONS='--import tsx' drizzle-kit generate",
     "db:migrate": "NODE_OPTIONS='--import tsx' drizzle-kit migrate",
     "db:push": "NODE_OPTIONS='--import tsx' drizzle-kit push",
@@ -30,10 +32,11 @@
   },
   "dependencies": {
     "@effect/platform": "*",
+    "@effect/platform-node": "*",
+    "better-auth": "^1.3.9",
     "drizzle-orm": "0.39.2",
     "effect": "*",
-    "pg": "8.13.1",
-    "@effect/platform-node": "*"
+    "pg": "8.13.1"
   },
   "effect": {
     "generateExports": {

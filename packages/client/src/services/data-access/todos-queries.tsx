@@ -108,6 +108,7 @@ export namespace TodosQueries {
                 return;
               }
 
+              // Updates cache with the newly obtained value
               yield* todosHelpers.setData((draft) => {
                 const index = draft.findIndex((t) => t.id === upsertedEvent.todo.id);
                 if (index !== -1) {

@@ -211,6 +211,7 @@ const makeService = (config: Config) =>
       transaction,
       setupConnectionListeners,
       makeQuery,
+      instance: db,
     } as const;
   });
 

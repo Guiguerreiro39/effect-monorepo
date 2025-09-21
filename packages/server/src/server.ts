@@ -7,7 +7,7 @@ import * as HttpServer from "@effect/platform/HttpServer";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { Database } from "@org/database/index";
-import * as dotenv from "dotenv";
+import { DatabaseLive } from "@org/database/lib/db";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -15,29 +15,15 @@ import * as Schedule from "effect/Schedule";
 import { createServer } from "node:http";
 import { Api } from "./api.js";
 import { EnvVars } from "./common/env-vars.js";
-import { UserAuthMiddlewareLive } from "./public/middlewares/auth-middleware-live.js";
-import { SseLive } from "./public/sse/sse-live.js";
-import { TodosLive } from "./public/todos/todos-live.js";
-
-dotenv.config({
-  path: "../../.env",
-});
+import { AuthLive } from "./domains/auth/auth-live.js";
+import { UserAuthMiddlewareLive } from "./domains/middlewares/auth-middleware-live.js";
+import { SseLive } from "./domains/sse/sse-live.js";
+import { TodosLive } from "./domains/todos/todos-live.js";
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
-  Layer.provide([TodosLive, SseLive]),
+  Layer.provide([TodosLive, SseLive, AuthLive]),
   Layer.provide([UserAuthMiddlewareLive]),
 );
-
-const DatabaseLive = Layer.unwrapEffect(
-  EnvVars.pipe(
-    Effect.map((envVars) =>
-      Database.layer({
-        url: envVars.DATABASE_URL,
-        ssl: envVars.ENV === "prod",
-      }),
-    ),
-  ),
-).pipe(Layer.provide(EnvVars.Default));
 
 const NodeSdkLive = Layer.unwrapEffect(
   EnvVars.OTLP_URL.pipe(
@@ -60,7 +46,7 @@ const CorsLive = Layer.unwrapEffect(
   EnvVars.pipe(
     Effect.map((envVars) =>
       HttpApiBuilder.middlewareCors({
-        allowedOrigins: [envVars.ENV === "dev" ? "*" : envVars.APP_URL],
+        allowedOrigins: [envVars.APP_URL],
         allowedMethods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         allowedHeaders: ["Content-Type", "Authorization", "B3", "traceparent"],
         credentials: true,
