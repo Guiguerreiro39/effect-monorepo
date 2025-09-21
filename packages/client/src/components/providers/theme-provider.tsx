@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema";
 import * as React from "react";
 
 const Theme = Schema.Literal("dark", "light", "system");
-type Theme = typeof Theme.Type;
+export type Theme = typeof Theme.Type;
 
 const ActualTheme = Schema.Literal("dark", "light");
 type ActualTheme = typeof ActualTheme.Type;

@@ -21,7 +21,7 @@ export const SignOutPage = () => {
   };
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-background p-4">
+    <div className="flex h-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <Card.Header>
           <Card.Title className="text-2xl font-bold tracking-tight">

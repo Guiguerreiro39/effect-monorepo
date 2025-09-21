@@ -1,4 +1,4 @@
-import { RootLayout } from "@/features/__root";
+import { RootLayout } from "@/features/layouts";
 import { authClient } from "@/lib/auth-client";
 import { createRootRoute } from "@tanstack/react-router";
 
