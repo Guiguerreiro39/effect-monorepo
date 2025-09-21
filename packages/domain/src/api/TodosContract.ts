@@ -3,7 +3,7 @@ import * as HttpApiGroup from "@effect/platform/HttpApiGroup";
 import * as HttpApiSchema from "@effect/platform/HttpApiSchema";
 import * as Schema from "effect/Schema";
 import { TodoId } from "../EntityIds.js";
-import { UserAuthMiddleware } from "../Policy.js";
+import { AuthMiddleware } from "../Policy.js";
 
 export class TodoNotFoundError extends Schema.TaggedError<TodoNotFoundError>("TodoNotFoundError")(
   "TodoNotFoundError",
@@ -35,7 +35,7 @@ export class UpdateTodoPayload extends Schema.Class<UpdateTodoPayload>("UpdateTo
 }) {}
 
 export class Group extends HttpApiGroup.make("todos")
-  .middleware(UserAuthMiddleware)
+  .middleware(AuthMiddleware)
   .add(HttpApiEndpoint.get("get", "/").addSuccess(Schema.Array(Todo)))
   .add(HttpApiEndpoint.post("create", "/").addSuccess(Todo).setPayload(CreateTodoPayload))
   .add(

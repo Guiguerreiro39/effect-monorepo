@@ -16,13 +16,14 @@ import { createServer } from "node:http";
 import { Api } from "./api.js";
 import { EnvVars } from "./common/env-vars.js";
 import { AuthLive } from "./domains/auth/auth-live.js";
-import { UserAuthMiddlewareLive } from "./domains/middlewares/auth-middleware-live.js";
+import { ChoresLive } from "./domains/chores/chores-live.js";
+import { AuthMiddlewareLive } from "./domains/middlewares/auth-middleware-live.js";
 import { SseLive } from "./domains/sse/sse-live.js";
 import { TodosLive } from "./domains/todos/todos-live.js";
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
-  Layer.provide([TodosLive, SseLive, AuthLive]),
-  Layer.provide([UserAuthMiddlewareLive]),
+  Layer.provide([TodosLive, SseLive, AuthLive, ChoresLive, AuthMiddlewareLive]),
+  Layer.provide([AuthMiddlewareLive]),
 );
 
 const NodeSdkLive = Layer.unwrapEffect(

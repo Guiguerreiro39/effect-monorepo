@@ -5,3 +5,6 @@ export type UserId = typeof UserId.Type;
 
 export const TodoId = Schema.String.pipe(Schema.brand("TodoId"));
 export type TodoId = typeof TodoId.Type;
+
+export const ChoreId = Schema.String.pipe(Schema.brand("ChoreId"));
+export type ChoreId = typeof ChoreId.Type;

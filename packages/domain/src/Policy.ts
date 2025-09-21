@@ -33,13 +33,10 @@ export class CurrentUser extends Context.Tag("CurrentUser")<
   }
 >() {}
 
-export class UserAuthMiddleware extends HttpApiMiddleware.Tag<UserAuthMiddleware>()(
-  "UserAuthMiddleware",
-  {
-    failure: CustomHttpApiError.Unauthorized,
-    provides: CurrentUser,
-  },
-) {}
+export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()("AuthMiddleware", {
+  failure: CustomHttpApiError.Unauthorized,
+  provides: CurrentUser,
+}) {}
 
 // ==========================================
 // Policy
