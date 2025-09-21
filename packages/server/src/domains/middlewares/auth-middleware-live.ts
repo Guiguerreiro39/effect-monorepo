@@ -17,10 +17,10 @@ const make = Effect.gen(function* () {
   const auth = yield* Auth;
 
   return Effect.gen(function* () {
-    const req = yield* HttpServerRequest.HttpServerRequest;
+    const request = yield* HttpServerRequest.HttpServerRequest;
 
     const session = yield* Effect.tryPromise({
-      try: () => auth.instance.api.getSession({ headers: new Headers(req.headers) }),
+      try: () => auth.instance.api.getSession({ headers: new Headers(request.headers) }),
       catch: () => new CustomHttpApiError.Unauthorized(),
     }).pipe(Effect.tapError(Effect.logError));
 

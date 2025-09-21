@@ -4,11 +4,23 @@ import * as HttpApiClient from "@effect/platform/HttpApiClient";
 import * as HttpClient from "@effect/platform/HttpClient";
 import { DomainApi } from "@org/domain/DomainApi";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as UnsafeHttpApiClient from "./unsafe-http-api-client";
 
 export class ApiClient extends Effect.Service<ApiClient>()("ApiClient", {
   accessors: true,
-  dependencies: [FetchHttpClient.layer],
+  dependencies: [
+    FetchHttpClient.layer.pipe(
+      Layer.provide(
+        Layer.succeed(
+          FetchHttpClient.RequestInit,
+          FetchHttpClient.RequestInit.of({
+            credentials: "include",
+          }),
+        ),
+      ),
+    ),
+  ],
   effect: Effect.gen(function* () {
     return {
       client: yield* HttpApiClient.make(DomainApi, {

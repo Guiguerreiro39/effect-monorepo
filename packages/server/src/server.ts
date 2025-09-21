@@ -49,7 +49,7 @@ const CorsLive = Layer.unwrapEffect(
       HttpApiBuilder.middlewareCors({
         allowedOrigins: [envVars.APP_URL],
         allowedMethods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-        allowedHeaders: ["Content-Type", "Authorization", "B3", "traceparent"],
+        allowedHeaders: ["Content-Type", "Authorization", "B3", "traceparent", "Cookie"],
         credentials: true,
       }),
     ),

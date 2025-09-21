@@ -20,7 +20,10 @@ const authHandler = Effect.gen(function* () {
 
   nodeResponse.setHeader("Access-Control-Allow-Origin", appUrl);
   nodeResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  nodeResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  nodeResponse.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, B3, traceparent, Cookie",
+  );
   nodeResponse.setHeader("Access-Control-Max-Age", "600");
   nodeResponse.setHeader("Access-Control-Allow-Credentials", "true");
 
