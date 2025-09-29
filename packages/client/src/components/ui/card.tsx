@@ -6,7 +6,7 @@ const CardRoot = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       data-slot="card"
-      className={cn("bg-card text-card-foreground rounded-xl border shadow-sm", className)}
+      className={cn("rounded-xl border bg-card text-card-foreground shadow-sm", className)}
       {...props}
     />
   );
@@ -16,7 +16,7 @@ const CardHeader = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       data-slot="card-header"
-      className={cn("flex flex-col gap-1.5 p-6", className)}
+      className={cn("flex flex-col gap-1.5 p-6 pb-0", className)}
       {...props}
     />
   );
@@ -26,7 +26,7 @@ const CardTitle = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       data-slot="card-title"
-      className={cn("font-semibold leading-none tracking-tight", className)}
+      className={cn("text-lg leading-none font-semibold tracking-tight", className)}
       {...props}
     />
   );
@@ -36,14 +36,14 @@ const CardDescription = ({ className, ...props }: React.ComponentProps<"div">) =
   return (
     <div
       data-slot="card-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );
 };
 
 const CardContent = ({ className, ...props }: React.ComponentProps<"div">) => {
-  return <div data-slot="card-content" className={cn("p-6 pt-0", className)} {...props} />;
+  return <div data-slot="card-content" className={cn("p-6", className)} {...props} />;
 };
 
 const CardFooter = ({ className, ...props }: React.ComponentProps<"div">) => {

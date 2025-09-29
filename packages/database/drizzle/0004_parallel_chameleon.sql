@@ -1,0 +1,1 @@
+ALTER TABLE "chores" RENAME TO "chore-template";

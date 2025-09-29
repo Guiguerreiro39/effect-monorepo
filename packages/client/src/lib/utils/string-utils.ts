@@ -1,6 +1,7 @@
 import * as Array from "effect/Array";
 import { flow, pipe } from "effect/Function";
 import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import * as String from "effect/String";
 
 /**
@@ -65,3 +66,15 @@ export const stripMessageFormatting = flow(
   String.replace(/\\n\\n/g, " "),
   String.replace(/\*(.*?)\*/g, "$1"),
 );
+
+/**
+ * Convert a string into a number
+ *
+ * @param {string} input - The string to convert.
+ * @returns {number} The number.
+ * @example
+ * stringToNumber("4") // Returns 4
+ * stringToNumber("4.5") // Returns 4.5
+ */
+
+export const stringToNumber = flow(Schema.decodeSync(Schema.NumberFromString));

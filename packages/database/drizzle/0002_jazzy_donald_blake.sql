@@ -1,0 +1,1 @@
+ALTER TABLE "chores" ALTER COLUMN "created_by" SET DATA TYPE text;

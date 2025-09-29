@@ -1,0 +1,1 @@
+ALTER TABLE "task" ADD COLUMN "prev_execution_date" timestamp NOT NULL;

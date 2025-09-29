@@ -1,58 +1,56 @@
 import * as HttpApiEndpoint from "@effect/platform/HttpApiEndpoint";
 import * as HttpApiGroup from "@effect/platform/HttpApiGroup";
 import * as Schema from "effect/Schema";
-import { ChoreId, TodoId } from "../EntityIds.js";
+import { TaskCompletionId, TaskId } from "../EntityIds.js";
 import { AuthMiddleware } from "../Policy.js";
-import { Chore } from "./ChoresContract.js";
-import { Todo } from "./TodosContract.js";
+import { TaskCompletion } from "./TaskCompletionContract.js";
+import { Task } from "./TaskContract.js";
 
 export class TestEvent extends Schema.TaggedClass<TestEvent>("TestEvent")("TestEvent", {
   message: Schema.String,
 }) {}
 
-export namespace Todos {
-  export class UpsertedTodo extends Schema.TaggedClass<UpsertedTodo>("UpsertedTodo")(
-    "UpsertedTodo",
+export namespace TaskEvents {
+  export class UpsertedTask extends Schema.TaggedClass<UpsertedTask>("UpsertedTask")(
+    "UpsertedTask",
     {
-      todo: Todo,
+      task: Task,
       optimisticId: Schema.optional(Schema.String),
     },
   ) {}
 
-  export class DeletedTodo extends Schema.TaggedClass<DeletedTodo>("DeletedTodo")("DeletedTodo", {
-    id: TodoId,
+  export class DeletedTask extends Schema.TaggedClass<DeletedTask>("DeletedTask")("DeletedTask", {
+    id: TaskId,
   }) {}
 
-  export const is = (event: Events): event is UpsertedTodo | DeletedTodo =>
-    event._tag === "UpsertedTodo" || event._tag === "DeletedTodo";
+  export const is = (event: Events): event is UpsertedTask | DeletedTask =>
+    event._tag === "UpsertedTask" || event._tag === "DeletedTask";
 }
 
-export namespace Chores {
-  export class UpsertedChore extends Schema.TaggedClass<UpsertedChore>("UpsertedChore")(
-    "UpsertedChore",
-    {
-      chore: Chore,
-      optimisticId: Schema.optional(Schema.String),
-    },
-  ) {}
+export namespace TaskCompletionEvents {
+  export class UpsertedTaskCompletion extends Schema.TaggedClass<UpsertedTaskCompletion>(
+    "UpsertedTaskCompletion",
+  )("UpsertedTaskCompletion", {
+    taskCompletion: TaskCompletion,
+    optimisticId: Schema.optional(Schema.String),
+  }) {}
 
-  export class DeletedChore extends Schema.TaggedClass<DeletedChore>("DeletedChore")(
-    "DeletedChore",
-    {
-      id: ChoreId,
-    },
-  ) {}
+  export class DeletedTaskCompletion extends Schema.TaggedClass<DeletedTaskCompletion>(
+    "DeletedTaskCompletion",
+  )("DeletedTaskCompletion", {
+    id: TaskCompletionId,
+  }) {}
 
-  export const is = (event: Events): event is UpsertedChore | DeletedChore =>
-    event._tag === "UpsertedChore" || event._tag === "DeletedChore";
+  export const is = (event: Events): event is UpsertedTaskCompletion | DeletedTaskCompletion =>
+    event._tag === "UpsertedTaskCompletion" || event._tag === "DeletedTaskCompletion";
 }
 
 export const Events = Schema.Union(
   TestEvent,
-  Todos.UpsertedTodo,
-  Todos.DeletedTodo,
-  Chores.UpsertedChore,
-  Chores.DeletedChore,
+  TaskEvents.UpsertedTask,
+  TaskEvents.DeletedTask,
+  TaskCompletionEvents.UpsertedTaskCompletion,
+  TaskCompletionEvents.DeletedTaskCompletion,
 );
 export type Events = typeof Events.Type;
 

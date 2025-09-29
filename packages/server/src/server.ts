@@ -14,16 +14,19 @@ import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 import { createServer } from "node:http";
 import { Api } from "./api.js";
+import { CorsLive } from "./common/cors.js";
 import { EnvVars } from "./common/env-vars.js";
 import { AuthLive } from "./domains/auth/auth-live.js";
-import { ChoresLive } from "./domains/chores/chores-live.js";
 import { AuthMiddlewareLive } from "./domains/middlewares/auth-middleware-live.js";
 import { SseLive } from "./domains/sse/sse-live.js";
-import { TodosLive } from "./domains/todos/todos-live.js";
+import { TaskCompletionLive } from "./domains/task-completion/task-completion-live.js";
+import { TaskLive } from "./domains/task/task-live.js";
+import { TaskQueueLive, TaskQueueWorkerLive } from "./domains/task/task-queue-live.js";
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
-  Layer.provide([TodosLive, SseLive, AuthLive, ChoresLive, AuthMiddlewareLive]),
+  Layer.provide([SseLive, AuthLive, TaskLive, TaskCompletionLive, AuthMiddlewareLive]),
   Layer.provide([AuthMiddlewareLive]),
+  Layer.provide([TaskQueueLive]),
 );
 
 const NodeSdkLive = Layer.unwrapEffect(
@@ -43,19 +46,6 @@ const NodeSdkLive = Layer.unwrapEffect(
   ),
 );
 
-const CorsLive = Layer.unwrapEffect(
-  EnvVars.pipe(
-    Effect.map((envVars) =>
-      HttpApiBuilder.middlewareCors({
-        allowedOrigins: [envVars.APP_URL],
-        allowedMethods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-        allowedHeaders: ["Content-Type", "Authorization", "B3", "traceparent", "Cookie"],
-        credentials: true,
-      }),
-    ),
-  ),
-);
-
 const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   HttpServer.withLogAddress,
   Layer.provide(CorsLive),
@@ -64,6 +54,7 @@ const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   Layer.provide(DatabaseLive),
   Layer.provide(NodeSdkLive),
   Layer.provide(EnvVars.Default),
+  Layer.merge(TaskQueueWorkerLive),
   Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 })),
 );
 

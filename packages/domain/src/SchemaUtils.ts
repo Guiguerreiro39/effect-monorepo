@@ -322,3 +322,10 @@ export const reverseSchema = <A, I, R>(schema: Schema.Schema<A, I, R>): Schema.S
     decode: ParseResult.encode(schema),
     encode: ParseResult.decode(schema),
   });
+
+/**
+ * A schema for validating Date strings or Date objects.
+ *
+ * @category schema
+ */
+export const DateFromStringOrSelf = Schema.Union(Schema.DateFromSelf, Schema.DateFromString);

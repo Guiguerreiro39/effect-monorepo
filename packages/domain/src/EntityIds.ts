@@ -3,8 +3,8 @@ import * as Schema from "effect/Schema";
 export const UserId = Schema.String.pipe(Schema.brand("UserId"));
 export type UserId = typeof UserId.Type;
 
-export const TodoId = Schema.String.pipe(Schema.brand("TodoId"));
-export type TodoId = typeof TodoId.Type;
+export const TaskId = Schema.String.pipe(Schema.brand("TaskId"));
+export type TaskId = typeof TaskId.Type;
 
-export const ChoreId = Schema.String.pipe(Schema.brand("ChoreId"));
-export type ChoreId = typeof ChoreId.Type;
+export const TaskCompletionId = Schema.String.pipe(Schema.brand("TaskCompletionId"));
+export type TaskCompletionId = typeof TaskCompletionId.Type;

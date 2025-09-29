@@ -24,9 +24,6 @@ const router = createRouter({
   routeTree,
   defaultPreload: "intent",
   scrollRestoration: true,
-  context: {
-    session: null,
-  },
 });
 
 declare module "@tanstack/react-router" {
@@ -72,7 +69,6 @@ const InnerProviders: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ReactQueryDevtools initialIsOpen={false} />
-
       <RuntimeProvider runtime={runtime}>
         <SseQueries.SseConnector />
         <RouterProvider router={router} />

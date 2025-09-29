@@ -1,4 +1,6 @@
+import { TaskService } from "@/features/tasks/api";
 import { SseContract } from "@org/domain/api/Contracts";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Either from "effect/Either";
 import * as Fiber from "effect/Fiber";
@@ -11,7 +13,6 @@ import React from "react";
 import { ApiClient } from "../common/api-client";
 import { NetworkMonitor } from "../common/network-monitor";
 import { useRuntime } from "../runtime/use-runtime";
-import { TodosQueries } from "./todos-queries";
 
 export namespace SseQueries {
   export const SseConnector: React.FC = () => {
@@ -32,6 +33,8 @@ export namespace SseQueries {
 
           const source = yield* response.stream.pipe(
             Stream.decodeText(),
+            Stream.retry(Schedule.spaced(Duration.millis(50))),
+            Stream.tapError(() => Effect.logError("[SseConnector] decodeText failed")),
             Stream.splitLines,
             Stream.filter((str) => str.length > 0),
             Stream.share({ capacity: "unbounded" }),
@@ -63,7 +66,7 @@ export namespace SseQueries {
             Stream.share({ capacity: "unbounded" }),
           );
 
-          const mergedStream = keepAliveStream.pipe(Stream.merge(TodosQueries.stream(dataStream)));
+          const mergedStream = keepAliveStream.pipe(Stream.merge(TaskService.stream(dataStream)));
 
           yield* Stream.runDrain(mergedStream);
 

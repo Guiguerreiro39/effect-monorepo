@@ -5,25 +5,50 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(0 0% 3.9%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(0 0% 3.9%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(0 0% 3.9%);
-  --primary: hsl(0 0% 9%);
-  --primary-foreground: hsl(0 0% 98%);
-  --secondary: hsl(0 0% 96.1%);
-  --secondary-foreground: hsl(0 0% 9%);
-  --muted: hsl(0 0% 96.1%);
-  --muted-foreground: hsl(0 0% 45.1%);
-  --accent: hsl(0 0% 96.1%);
-  --accent-foreground: hsl(0 0% 9%);
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(0 0% 89.8%);
-  --input: hsl(0 0% 89.8%);
-  --ring: hsl(0 0% 3.9%);
+  --background: hsl(40 40% 94%); /* warm cream #f7f1e3 */
+  --foreground: hsl(24 15% 15%); /* earthy brown #3c2f2f */
+
+  --card: hsl(45 60% 96%); /* soft ivory #fcf8ee */
+  --card-foreground: hsl(24 15% 15%);
+
+  --popover: hsl(42 35% 97%);
+  --popover-foreground: hsl(24 15% 15%);
+
+  --primary: hsl(26 65% 52%); /* warm terracotta orange #e07a3f */
+  --primary-lightest: hsl(26 70% 92%);
+  --primary-light: hsl(26 70% 75%);
+  --primary-soft: hsl(26 70% 65%);
+  --primary-dark: hsl(26 65% 42%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(48 70% 65%); /* golden wheat #f6d67a */
+  --secondary-lightest: hsl(48 80% 92%);
+  --secondary-light: hsl(48 80% 80%);
+  --secondary-soft: hsl(48 75% 72%);
+  --secondary-dark: hsl(48 70% 55%);
+  --secondary-foreground: hsl(42 70% 38%);
+
+  --muted: hsl(42 25% 92%); /* soft cream parchment #f6f0e2 */
+  --muted-foreground: hsl(30 12% 50%); /* gentle clay taupe #8c7a6a */
+
+  --accent: hsl(142 30% 40%); /* mossy green #4d7c57 */
+  --accent-foreground: hsl(0 0% 100%);
+
+  --destructive: hsl(0 60% 50%); /* softer red #d45d5d */
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --streak: var(--color-amber-50);
+  --streak-foreground: var(--color-amber-600);
+  --streak-border: var(--color-amber-200);
+
+  --success: hsl(142 40% 90%); /* soft misty green #e6f2eb */
+  --success-foreground: hsl(142 30% 35%); /* mossy green #47694f */
+  --success-border: hsl(142 35% 75%); /* muted sage green #b7d4c0 */
+
+  --border: hsl(40 20% 80%); /* muted beige border */
+  --input: hsl(40 20% 90%);
+  --ring: hsl(26 65% 52%); /* terracotta orange */
+
   --chart-1: hsl(12 76% 61%);
   --chart-2: hsl(173 58% 39%);
   --chart-3: hsl(197 37% 24%);
@@ -39,25 +64,33 @@
 }
 
 .dark {
-  --background: hsl(0 0% 3.9%);
-  --foreground: hsl(0 0% 98%);
-  --card: hsl(0 0% 3.9%);
-  --card-foreground: hsl(0 0% 98%);
-  --popover: hsl(0 0% 3.9%);
-  --popover-foreground: hsl(0 0% 98%);
-  --primary: hsl(0 0% 98%);
-  --primary-foreground: hsl(0 0% 9%);
-  --secondary: hsl(0 0% 14.9%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(0 0% 14.9%);
-  --muted-foreground: hsl(0 0% 63.9%);
-  --accent: hsl(0 0% 14.9%);
-  --accent-foreground: hsl(0 0% 98%);
-  --destructive: hsl(0 62.8% 40.6%);
-  --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(0 0% 14.9%);
-  --input: hsl(0 0% 14.9%);
-  --ring: hsl(0 0% 83.1%);
+  --background: hsl(222 47% 11%); /* #0f172a slate-900 */
+  --foreground: hsl(210 40% 98%); /* #f9fafb */
+
+  --card: hsl(222 47% 13%); /* #1e293b slate-800 */
+  --card-foreground: hsl(210 40% 98%);
+
+  --popover: hsl(222 47% 13%);
+  --popover-foreground: hsl(210 40% 98%);
+
+  --primary: hsl(262 83% 67%); /* lighter purple for dark bg */
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(48 96% 60%); /* warm yellow */
+  --secondary-foreground: hsl(0 0% 10%);
+
+  --muted: hsl(215 20% 20%); /* #374151 slate-700 */
+  --muted-foreground: hsl(217 12% 65%); /* #9ca3af slate-400 */
+
+  --accent: hsl(142 72% 45%); /* #22c55e green */
+  --accent-foreground: hsl(0 0% 0%);
+
+  --destructive: hsl(0 84% 65%); /* #ef4444 red */
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(215 20% 25%); /* #4b5563 slate-600 */
+  --input: hsl(215 20% 25%);
+  --ring: hsl(262 83% 67%); /* purple ring */
 
   --chart-1: hsl(220 70% 50%);
   --chart-2: hsl(160 60% 45%);
@@ -74,8 +107,16 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-lightest: var(--primary-lightest);
+  --color-primary-light: var(--primary-light);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-dark: var(--primary-dark);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-lightest: var(--secondary-lightest);
+  --color-secondary-light: var(--secondary-light);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary-dark: var(--secondary-dark);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
@@ -86,6 +127,12 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-border: var(--success-border);
+  --color-streak: var(--streak);
+  --color-streak-foreground: var(--streak-foreground);
+  --color-streak-border: var(--streak-border);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -103,5 +150,12 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  .streak-gradient {
+    @apply bg-gradient-to-r from-primary-soft to-primary;
+  }
+  .xp-gradient {
+    @apply bg-gradient-to-r from-secondary-soft to-secondary;
   }
 }

@@ -84,6 +84,7 @@
     "server:dev": "bun --filter @org/server dev",
     "db:studio": "bun --filter @org/database db:studio",
     "db:push": "bun --filter @org/database db:push",
+    "db:generate": "bun --filter @org/database db:generate",
     "auth:generate": "bun --filter @org/database auth:generate"
   },
   "type": "module",

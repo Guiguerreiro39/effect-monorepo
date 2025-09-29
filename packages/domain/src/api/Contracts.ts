@@ -1,4 +1,4 @@
 export * as AuthContract from "./AuthContract.js";
-export * as ChoresContract from "./ChoresContract.js";
 export * as SseContract from "./SseContract.js";
-export * as TodosContract from "./TodosContract.js";
+export * as TaskCompletionContract from "./TaskCompletionContract.js";
+export * as TaskContract from "./TaskContract.js";
