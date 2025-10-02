@@ -1,6 +1,7 @@
 import { diffInMilliseconds, startOfDay, startOfNextDay } from "@/lib/datetime-utils.js";
 import { Database, DbSchema } from "@org/database/index";
 import { TaskContract } from "@org/domain/api/Contracts";
+import type { GetByIdParams } from "@org/domain/api/TaskContract";
 import { TaskId, type UserId } from "@org/domain/EntityIds";
 import { TaskNotFoundError } from "@org/domain/Errors";
 import { JobQueue } from "@org/domain/Queue";
@@ -70,9 +71,6 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
         ).pipe(
           Effect.flatMap(Array.head),
           Effect.flatMap(Schema.decode(TaskContract.Task)),
-          Effect.tap((task) => {
-            return queue.updateJob(task, diffInMilliseconds(new Date(), task.nextExecutionDate));
-          }),
           Effect.catchTags({
             DatabaseError: Effect.die,
             NoSuchElementException: () =>
@@ -80,8 +78,6 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
                 message: `Task with id ${input.id} not found`,
               }),
             ParseError: Effect.die,
-            JobQueueEnqueueJobError: Effect.die,
-            JobQueueCancelJobError: Effect.die,
           }),
           Effect.withSpan("TaskRepository.updateExecutionDate"),
         ),
@@ -100,6 +96,9 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
             prevExecutionDate: task.prevExecutionDate,
           }),
         ),
+        Effect.tap((task) => {
+          return queue.updateJob(task, diffInMilliseconds(new Date(), task.nextExecutionDate));
+        }),
         Effect.tap((task) => {
           const taskCompletions = taskCompletionRepository.findManyPendingByTaskId(task.id);
 
@@ -122,8 +121,33 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
             }),
           ParseError: Effect.die,
           TaskCompletionNotFoundError: Effect.die,
+          JobQueueCancelJobError: Effect.die,
+          JobQueueEnqueueJobError: Effect.die,
         }),
         Effect.withSpan("TaskRepository.update"),
+      ),
+    );
+
+    const findById = db.makeQuery((execute, input: typeof GetByIdParams.Type) =>
+      execute((client) =>
+        client.query.task.findFirst({
+          where: (task, { eq }) => eq(task.id, input.id),
+        }),
+      ).pipe(
+        Effect.flatMap((task) => {
+          if (!task)
+            return Effect.fail(
+              new TaskNotFoundError({ message: `Task with id ${input.id} not found` }),
+            );
+
+          return Effect.succeed(task);
+        }),
+        Effect.flatMap(Schema.decode(TaskContract.Task)),
+        Effect.catchTags({
+          DatabaseError: Effect.die,
+          ParseError: Effect.die,
+        }),
+        Effect.withSpan("TaskRepository.findById"),
       ),
     );
 
@@ -184,6 +208,7 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
       create,
       del,
       findAll,
+      findById,
       update,
       updateExecutionDate,
     };

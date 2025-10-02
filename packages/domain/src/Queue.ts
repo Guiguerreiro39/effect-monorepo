@@ -2,6 +2,7 @@ import type { Job, Worker } from "bullmq";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type { RuntimeFiber } from "effect/Fiber";
+import type { ParseError } from "effect/ParseResult";
 import * as Schema from "effect/Schema";
 import type { Scope } from "effect/Scope";
 import type { TaskContract } from "./api/Contracts.js";
@@ -11,6 +12,12 @@ import type { TaskNotFoundError } from "./Errors.js";
 export class JobQueueEnqueueJobError extends Schema.TaggedError<JobQueueEnqueueJobError>(
   "JobQueueEnqueueJobError",
 )("JobQueueEnqueueJobError", {
+  message: Schema.String,
+}) {}
+
+export class JobQueueUpdateJobError extends Schema.TaggedError<JobQueueUpdateJobError>(
+  "JobQueueUpdateJobError",
+)("JobQueueUpdateJobError", {
   message: Schema.String,
 }) {}
 
@@ -34,7 +41,9 @@ export class JobQueue extends Context.Tag("JobQueue")<
       delay: number,
     ) => Effect.Effect<void, JobQueueEnqueueJobError>;
     readonly startWorker: (
-      processor: (job: Job<{ task: TaskContract.Task }>) => Effect.Effect<void, TaskNotFoundError>,
+      processor: (
+        job: Job<{ task: TaskContract.Task }>,
+      ) => Effect.Effect<void, TaskNotFoundError | ParseError | JobQueueUpdateJobError>,
     ) => Effect.Effect<
       RuntimeFiber<Worker<{ task: TaskContract.Task }, unknown, string>, JobQueueStartWorkerError>,
       never,

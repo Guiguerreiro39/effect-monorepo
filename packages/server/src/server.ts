@@ -24,6 +24,7 @@ import { TaskLive } from "./domains/task/task-live.js";
 import { TaskQueueLive, TaskQueueWorkerLive } from "./domains/task/task-queue-live.js";
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
+  Layer.merge(TaskQueueWorkerLive),
   Layer.provide([SseLive, AuthLive, TaskLive, TaskCompletionLive, AuthMiddlewareLive]),
   Layer.provide([AuthMiddlewareLive]),
   Layer.provide([TaskQueueLive]),
@@ -54,7 +55,6 @@ const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   Layer.provide(DatabaseLive),
   Layer.provide(NodeSdkLive),
   Layer.provide(EnvVars.Default),
-  Layer.merge(TaskQueueWorkerLive),
   Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 })),
 );
 

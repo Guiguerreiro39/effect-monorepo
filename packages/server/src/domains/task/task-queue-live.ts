@@ -1,16 +1,19 @@
 import { EnvVars } from "@/common/env-vars.js";
-import type { TaskContract } from "@org/domain/api/Contracts";
+import { diffInMilliseconds } from "@/lib/datetime-utils.js";
+import { TaskContract } from "@org/domain/api/Contracts";
 import type { TaskId } from "@org/domain/EntityIds";
 import {
   JobQueue,
   JobQueueCancelJobError,
   JobQueueEnqueueJobError,
   JobQueueStartWorkerError,
+  JobQueueUpdateJobError,
 } from "@org/domain/Queue";
 import { Queue, Worker, type Job } from "bullmq";
 import * as Effect from "effect/Effect";
 import { pipe } from "effect/Function";
 import * as Layer from "effect/Layer";
+import * as Schema from "effect/Schema";
 import { Redis } from "ioredis";
 import { calculateNextDate } from "./frequency-utils.js";
 import { TaskRepository } from "./task-repository.js";
@@ -48,7 +51,9 @@ const make = Effect.gen(function* () {
       try: async () => {
         const jobId = jobIdForTask(taskId);
         const job = await queue.getJob(jobId);
-        if (job) {
+        const state = await job?.getState();
+
+        if (job && (state === "waiting" || state === "delayed" || state === "failed")) {
           await job.remove();
         }
       },
@@ -61,17 +66,27 @@ const make = Effect.gen(function* () {
       Effect.flatMap(() => enqueueDelayed(task, newDelay)),
     );
 
-  const startWorker = (processor: (job: Job) => Effect.Effect<void, Error>) =>
+  const startWorker = (
+    processor: (job: Job<{ task: TaskContract.Task }>) => Effect.Effect<void, Error>,
+  ) =>
     Effect.tryPromise({
       try: async () => {
         const worker = new Worker(
           QUEUE_NAME,
-          async (job: Job) => {
+          async (job: Job<{ task: TaskContract.Task }>) => {
             // Run the Effect processor synchronously via runPromise
             await Effect.runPromise(processor(job));
           },
           { connection: { url: envVars.REDIS_URL.toString() }, concurrency: 5 }, // Adjust concurrency as needed
         );
+
+        worker.on("completed", (job) => {
+          void enqueueDelayed(
+            job.data.task,
+            diffInMilliseconds(new Date(), job.data.task.nextExecutionDate),
+          ).pipe(Effect.runPromise);
+        });
+
         // Worker runs indefinitely; we fork it as daemon elsewhere
         return worker;
       },
@@ -91,19 +106,30 @@ export const TaskQueueLive = Layer.scoped(JobQueue, make).pipe(Layer.provide(Env
 export const TaskQueueWorkerLive = Layer.scopedDiscard(
   Effect.gen(function* () {
     const queue = yield* JobQueue;
+    const taskRepository = yield* TaskRepository;
 
     const processJob = (job: Job<{ task: TaskContract.Task }>) =>
       Effect.gen(function* () {
-        yield* TaskRepository.Service.updateExecutionDate({
-          id: job.data.task.id,
-          nextExecutionDate: calculateNextDate(
-            job.data.task.frequency,
-            job.data.task.nextExecutionDate,
-          ),
-          prevExecutionDate: job.data.task.nextExecutionDate,
+        const decode = Schema.decode(TaskContract.UpdateTaskExecutionDatePayload);
+
+        const updatedTask = yield* taskRepository.updateExecutionDate(
+          yield* decode({
+            id: job.data.task.id,
+            nextExecutionDate: calculateNextDate(
+              job.data.task.frequency,
+              job.data.task.nextExecutionDate,
+            ),
+            prevExecutionDate: job.data.task.nextExecutionDate,
+          }),
+        );
+
+        yield* Effect.tryPromise({
+          try: () => job.updateData({ task: updatedTask }),
+          catch: () =>
+            new JobQueueUpdateJobError({ message: "Failed to update job: " + job.data.task.id }),
         });
       });
 
     return yield* queue.startWorker(processJob);
   }),
-).pipe(Layer.provide([TaskQueueLive]));
+).pipe(Layer.provide([TaskQueueLive, TaskRepository.Default]));

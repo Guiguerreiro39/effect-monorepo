@@ -18,6 +18,9 @@ export const TaskLive = HttpApiBuilder.group(
       .handle("get", (request) =>
         repository.findAll(request.urlParams).pipe(Effect.withSpan("TaskLive.get")),
       )
+      .handle("getById", (request) =>
+        repository.findById(request.path).pipe(Effect.withSpan("TaskLive.getById")),
+      )
       .handle("create", (request) => {
         return Effect.gen(function* () {
           const currentUser = yield* CurrentUser;

@@ -48,10 +48,20 @@ export class GetTasksUrlParams extends Schema.Class<GetTasksUrlParams>("GetTasks
   from: Schema.optional(Schema.String),
 }) {}
 
+export class GetByIdParams extends Schema.Class<GetByIdParams>("GetByIdParams")({
+  id: TaskId,
+}) {}
+
 export class Group extends HttpApiGroup.make("tasks")
   .middleware(AuthMiddleware)
   .add(
     HttpApiEndpoint.get("get", "/").addSuccess(Schema.Array(Task)).setUrlParams(GetTasksUrlParams),
+  )
+  .add(
+    HttpApiEndpoint.get("getById", "/:id")
+      .addSuccess(Task)
+      .setPath(GetByIdParams)
+      .addError(TaskNotFoundError),
   )
   .add(HttpApiEndpoint.post("create", "/").addSuccess(Task).setPayload(CreateTaskPayload))
   .add(

@@ -17,8 +17,11 @@ export class TaskCompletion extends Schema.Class<TaskCompletion>("TaskCompletion
 export class CreateTaskCompletionPayload extends Schema.Class<CreateTaskCompletionPayload>(
   "CreateTaskCompletionPayload",
 )({
-  taskId: TaskCompletion.fields.taskId,
+  taskId: TaskId,
   experience: TaskCompletion.fields.experience,
+  optimisticId: Schema.optional(Schema.String).annotations({
+    description: "Client-generated ID for optimistic updates",
+  }),
 }) {}
 
 export class UpdateTaskCompletionPayload extends Schema.Class<UpdateTaskCompletionPayload>(

@@ -130,7 +130,12 @@ export function makeHelpers<Data, Variables = void>(
                   return result;
                 }
               },
-              {},
+              {
+                mark: (target, { immutable }) => {
+                  if (target instanceof Date) return () => new Date(target.getTime());
+                  return immutable;
+                },
+              },
             ) as Data;
           },
         ),

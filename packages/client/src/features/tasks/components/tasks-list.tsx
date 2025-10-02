@@ -1,11 +1,9 @@
 import { Card, Skeleton } from "@/components/ui";
-import { TaskService } from "../api";
+import { TaskCompletionService } from "../api";
 import { TaskItem } from "./task-item";
 
 export const TasksList = () => {
-  const { data, isLoading } = TaskService.useGetAllTasks({
-    from: new Date().toISOString(),
-  });
+  const { data, isLoading } = TaskCompletionService.useGetAllTaskCompletions();
 
   if (isLoading) return <TaskListSkeleton />;
   if (!data || data.length === 0) return <EmptyTaskList />;
@@ -16,8 +14,8 @@ export const TasksList = () => {
         <Card.Title>My tasks</Card.Title>
       </Card.Header>
       <Card.Content className="space-y-2">
-        {data.map((task) => (
-          <TaskItem key={task.id} task={task} />
+        {data.map((taskCompletion) => (
+          <TaskItem.Root key={taskCompletion.id} taskCompletion={taskCompletion} />
         ))}
       </Card.Content>
     </Card>
@@ -33,9 +31,9 @@ const TaskListSkeleton = () => {
         </Card.Title>
       </Card.Header>
       <Card.Content className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
+        <TaskItem.Skeleton />
+        <TaskItem.Skeleton />
+        <TaskItem.Skeleton />
       </Card.Content>
     </Card>
   );
