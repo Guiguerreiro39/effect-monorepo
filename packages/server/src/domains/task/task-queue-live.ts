@@ -2,6 +2,7 @@ import { EnvVars } from "@/common/env-vars.js";
 import { diffInMilliseconds } from "@/lib/datetime-utils.js";
 import { TaskContract } from "@org/domain/api/Contracts";
 import type { TaskId } from "@org/domain/EntityIds";
+import { TaskCompletionStatus } from "@org/domain/Enums";
 import {
   JobQueue,
   JobQueueCancelJobError,
@@ -15,6 +16,7 @@ import { pipe } from "effect/Function";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import { Redis } from "ioredis";
+import { TaskCompletionRepository } from "../task-completion/task-completion-repository.js";
 import { calculateNextDate } from "./frequency-utils.js";
 import { TaskRepository } from "./task-repository.js";
 
@@ -107,21 +109,44 @@ export const TaskQueueWorkerLive = Layer.scopedDiscard(
   Effect.gen(function* () {
     const queue = yield* JobQueue;
     const taskRepository = yield* TaskRepository;
+    const taskCompletionRepository = yield* TaskCompletionRepository;
 
     const processJob = (job: Job<{ task: TaskContract.Task }>) =>
       Effect.gen(function* () {
         const decode = Schema.decode(TaskContract.UpdateTaskExecutionDatePayload);
 
-        const updatedTask = yield* taskRepository.updateExecutionDate(
-          yield* decode({
-            id: job.data.task.id,
-            nextExecutionDate: calculateNextDate(
-              job.data.task.frequency,
-              job.data.task.nextExecutionDate,
+        const updatedTask = yield* taskRepository
+          .updateExecutionDate(
+            yield* decode({
+              id: job.data.task.id,
+              nextExecutionDate: calculateNextDate(
+                job.data.task.frequency,
+                job.data.task.nextExecutionDate,
+              ),
+              prevExecutionDate: job.data.task.nextExecutionDate,
+            }),
+          )
+          .pipe(Effect.withSpan("JobQueueWorkerLive.updateTaskExecutionDate"));
+
+        yield* taskCompletionRepository.findManyPendingByTaskId(job.data.task.id).pipe(
+          Effect.flatMap((taskCompletions) =>
+            Effect.forEach(taskCompletions, (taskCompletion) =>
+              taskCompletionRepository
+                .update({
+                  id: taskCompletion.id,
+                  status: TaskCompletionStatus.Failed,
+                })
+                .pipe(Effect.withSpan("JobQueueWorkerLive.updateTaskCompletion")),
             ),
-            prevExecutionDate: job.data.task.nextExecutionDate,
-          }),
+          ),
         );
+
+        yield* taskCompletionRepository
+          .create({
+            taskId: job.data.task.id,
+            experience: job.data.task.experience,
+          })
+          .pipe(Effect.withSpan("JobQueueWorkerLive.createTaskCompletion"));
 
         yield* Effect.tryPromise({
           try: () => job.updateData({ task: updatedTask }),
@@ -132,4 +157,4 @@ export const TaskQueueWorkerLive = Layer.scopedDiscard(
 
     return yield* queue.startWorker(processJob);
   }),
-).pipe(Layer.provide([TaskQueueLive, TaskRepository.Default]));
+).pipe(Layer.provide([TaskQueueLive, TaskRepository.Default, TaskCompletionRepository.Default]));

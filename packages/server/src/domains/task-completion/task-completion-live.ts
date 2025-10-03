@@ -14,7 +14,9 @@ export const TaskCompletionLive = HttpApiBuilder.group(
     const sseManager = yield* SseManager;
 
     return handlers
-      .handle("get", () => repository.findAll().pipe(Effect.withSpan("TaskCompletionLive.get")))
+      .handle("get", (request) =>
+        repository.findMany(request.payload).pipe(Effect.withSpan("TaskCompletionLive.get")),
+      )
       .handle("create", (request) =>
         repository.create(request.payload).pipe(
           Effect.tap((taskCompletion) =>

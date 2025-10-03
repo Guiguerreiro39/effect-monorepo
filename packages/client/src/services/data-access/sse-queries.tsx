@@ -1,4 +1,4 @@
-import { TaskService } from "@/features/tasks/api";
+import { TaskCompletionService, TaskService } from "@/features/tasks/api";
 import { SseContract } from "@org/domain/api/Contracts";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -66,7 +66,10 @@ export namespace SseQueries {
             Stream.share({ capacity: "unbounded" }),
           );
 
-          const mergedStream = keepAliveStream.pipe(Stream.merge(TaskService.stream(dataStream)));
+          const mergedStream = keepAliveStream.pipe(
+            Stream.merge(TaskService.stream(dataStream)),
+            Stream.merge(TaskCompletionService.stream(dataStream)),
+          );
 
           yield* Stream.runDrain(mergedStream);
 

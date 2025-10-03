@@ -25,7 +25,7 @@ import { TaskQueueLive, TaskQueueWorkerLive } from "./domains/task/task-queue-li
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
   Layer.merge(TaskQueueWorkerLive),
-  Layer.provide([SseLive, AuthLive, TaskLive, TaskCompletionLive, AuthMiddlewareLive]),
+  Layer.provide([SseLive, AuthLive, TaskLive, TaskCompletionLive]),
   Layer.provide([AuthMiddlewareLive]),
   Layer.provide([TaskQueueLive]),
 );

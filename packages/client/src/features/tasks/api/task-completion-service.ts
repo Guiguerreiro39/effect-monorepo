@@ -1,7 +1,6 @@
 import { QueryData, useEffectMutation, useEffectQuery } from "@/lib/tanstack-query";
 import { ApiClient } from "@/services/common/api-client";
 import { SseContract, type TaskCompletionContract } from "@org/domain/api/Contracts";
-import type { TaskCompletionId } from "@org/domain/EntityIds";
 import * as Effect from "effect/Effect";
 import * as Match from "effect/Match";
 import * as Ref from "effect/Ref";
@@ -13,12 +12,14 @@ export namespace TaskCompletionService {
 
   const pendingOptimisticIds = Ref.unsafeMake(new Set<string>());
 
-  export const useGetAllTaskCompletions = () => {
+  export const useGetAllTaskCompletions = (
+    payload: typeof TaskCompletionContract.GetTaskCompletionPayload.Type,
+  ) => {
     return useEffectQuery({
       queryKey: taskKey(),
       queryFn: () =>
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        ApiClient.use(({ client }) => client.taskCompletions.get()),
+        ApiClient.use(({ client }) => client.taskCompletions.get({ payload })),
     });
   };
 
@@ -26,7 +27,7 @@ export namespace TaskCompletionService {
     return useEffectMutation({
       mutationKey: ["TaskCompletionService.createTaskCompletion"],
       mutationFn: Effect.fnUntraced(function* (
-        taskCompletion: Omit<TaskCompletionContract.CreateTaskCompletionPayload, "optimisticId">,
+        payload: Omit<TaskCompletionContract.CreateTaskCompletionPayload, "optimisticId">,
       ) {
         const { client } = yield* ApiClient;
 
@@ -40,17 +41,15 @@ export namespace TaskCompletionService {
           }),
         );
 
-        return yield* client.taskCompletions
-          .create({ payload: { ...taskCompletion, optimisticId } })
-          .pipe(
-            Effect.tap((createdTaskCompletion) =>
-              taskHelpers.setData((draft) => {
-                if (!draft.some((t) => t.id === createdTaskCompletion.id)) {
-                  draft.unshift(createdTaskCompletion);
-                }
-              }),
-            ),
-          );
+        return yield* client.taskCompletions.create({ payload: { ...payload, optimisticId } }).pipe(
+          Effect.tap((createdTaskCompletion) =>
+            taskHelpers.setData((draft) => {
+              if (!draft.some((t) => t.id === createdTaskCompletion.id)) {
+                draft.unshift(createdTaskCompletion);
+              }
+            }),
+          ),
+        );
       }, Effect.scoped),
       toastifySuccess: () => "Task created!",
     });
@@ -59,11 +58,9 @@ export namespace TaskCompletionService {
   export const useUpdateTaskCompletion = () => {
     return useEffectMutation({
       mutationKey: ["TaskCompletionService.updateTaskCompletion"],
-      mutationFn: (taskCompletion: TaskCompletionContract.UpdateTaskCompletionPayload) =>
+      mutationFn: (payload: TaskCompletionContract.UpdateTaskCompletionPayload) =>
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        ApiClient.use(({ client }) =>
-          client.taskCompletions.update({ payload: taskCompletion }),
-        ).pipe(
+        ApiClient.use(({ client }) => client.taskCompletions.update({ payload })).pipe(
           Effect.tap((updatedTask) =>
             taskHelpers.setData((draft) => {
               const index = draft.findIndex((t) => t.id === updatedTask.id);
@@ -80,12 +77,12 @@ export namespace TaskCompletionService {
   export const useDeleteTaskCompletion = () => {
     return useEffectMutation({
       mutationKey: ["TaskCompletionService.deleteTaskCompletion"],
-      mutationFn: (id: TaskCompletionId) =>
+      mutationFn: (payload: typeof TaskCompletionContract.DeleteTaskCompletionPayload.Type) =>
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        ApiClient.use(({ client }) => client.taskCompletions.delete({ payload: id })).pipe(
+        ApiClient.use(({ client }) => client.taskCompletions.delete({ payload })).pipe(
           Effect.tap(() =>
             taskHelpers.setData((draft) => {
-              const index = draft.findIndex((t) => t.id === id);
+              const index = draft.findIndex((t) => t.id === payload.id);
               if (index !== -1) {
                 draft.splice(index, 1);
               }

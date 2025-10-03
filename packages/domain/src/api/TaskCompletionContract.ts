@@ -33,9 +33,26 @@ export class UpdateTaskCompletionPayload extends Schema.Class<UpdateTaskCompleti
   experience: Schema.optional(TaskCompletion.fields.experience),
 }) {}
 
+export class DeleteTaskCompletionPayload extends Schema.Class<DeleteTaskCompletionPayload>(
+  "DeleteTaskCompletionPayload",
+)({
+  id: TaskCompletion.fields.id,
+}) {}
+
+export class GetTaskCompletionPayload extends Schema.Class<GetTaskCompletionPayload>(
+  "GetTaskCompletionPayload",
+)({
+  taskId: Schema.optional(TaskCompletion.fields.taskId),
+  status: Schema.optional(TaskCompletion.fields.status),
+}) {}
+
 export class Group extends HttpApiGroup.make("taskCompletions")
   .middleware(AuthMiddleware)
-  .add(HttpApiEndpoint.get("get", "/").addSuccess(Schema.Array(TaskCompletion)))
+  .add(
+    HttpApiEndpoint.get("get", "/")
+      .addSuccess(Schema.Array(TaskCompletion))
+      .setPayload(GetTaskCompletionPayload),
+  )
   .add(
     HttpApiEndpoint.post("create", "/")
       .addSuccess(TaskCompletion)
@@ -51,6 +68,6 @@ export class Group extends HttpApiGroup.make("taskCompletions")
     HttpApiEndpoint.del("delete", "/:id")
       .addError(TaskCompletionNotFoundError)
       .addSuccess(Schema.Void)
-      .setPayload(TaskCompletionId),
+      .setPayload(DeleteTaskCompletionPayload),
   )
   .prefix("/tasks/completions") {}

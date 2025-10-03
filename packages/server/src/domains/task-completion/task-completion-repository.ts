@@ -53,19 +53,24 @@ export class TaskCompletionRepository extends Effect.Service<TaskCompletionRepos
           ),
       );
 
-      const findAll = db.makeQuery((execute) =>
-        execute((client) =>
-          client.query.taskCompletion.findMany({
-            orderBy: (task_completions, { desc }) => [desc(task_completions.createdAt)],
-          }),
-        ).pipe(
-          Effect.flatMap(Schema.decode(Schema.Array(TaskCompletionContract.TaskCompletion))),
-          Effect.catchTags({
-            DatabaseError: Effect.die,
-            ParseError: Effect.die,
-          }),
-          Effect.withSpan("TaskCompletionRepository.findAll"),
-        ),
+      const findMany = db.makeQuery(
+        (execute, input: typeof TaskCompletionContract.GetTaskCompletionPayload.Type) =>
+          execute((client) =>
+            client.query.taskCompletion.findMany({
+              where: d.and(
+                input.taskId ? d.eq(DbSchema.taskCompletion.taskId, input.taskId) : undefined,
+                input.status ? d.eq(DbSchema.taskCompletion.status, input.status) : undefined,
+              ),
+              orderBy: (task_completions, { desc }) => [desc(task_completions.createdAt)],
+            }),
+          ).pipe(
+            Effect.flatMap(Schema.decode(Schema.Array(TaskCompletionContract.TaskCompletion))),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              ParseError: Effect.die,
+            }),
+            Effect.withSpan("TaskCompletionRepository.findAll"),
+          ),
       );
 
       const findManyPendingByTaskId = db.makeQuery((execute, taskId: TaskId) =>
@@ -87,31 +92,32 @@ export class TaskCompletionRepository extends Effect.Service<TaskCompletionRepos
         ),
       );
 
-      const del = db.makeQuery((execute, input: TaskCompletionId) =>
-        execute((client) =>
-          client
-            .delete(DbSchema.taskCompletion)
-            .where(d.eq(DbSchema.taskCompletion.id, input))
-            .returning({ id: DbSchema.taskCompletion.id }),
-        ).pipe(
-          Effect.flatMap(Array.head),
-          Effect.flatMap(Schema.decode(Schema.Struct({ id: TaskCompletionId }))),
-          Effect.catchTags({
-            DatabaseError: Effect.die,
-            NoSuchElementException: () =>
-              new TaskCompletionNotFoundError({
-                message: `TaskCompletion with id ${input} not found`,
-              }),
-            ParseError: Effect.die,
-          }),
-          Effect.withSpan("TaskCompletionRepository.del"),
-        ),
+      const del = db.makeQuery(
+        (execute, input: typeof TaskCompletionContract.DeleteTaskCompletionPayload.Type) =>
+          execute((client) =>
+            client
+              .delete(DbSchema.taskCompletion)
+              .where(d.eq(DbSchema.taskCompletion.id, input.id))
+              .returning({ id: DbSchema.taskCompletion.id }),
+          ).pipe(
+            Effect.flatMap(Array.head),
+            Effect.flatMap(Schema.decode(Schema.Struct({ id: TaskCompletionId }))),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              NoSuchElementException: () =>
+                new TaskCompletionNotFoundError({
+                  message: `TaskCompletion with id ${input} not found`,
+                }),
+              ParseError: Effect.die,
+            }),
+            Effect.withSpan("TaskCompletionRepository.del"),
+          ),
       );
 
       return {
         create,
         del,
-        findAll,
+        findMany,
         findManyPendingByTaskId,
         update,
       };

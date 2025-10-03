@@ -1,6 +1,8 @@
+import { SseManager } from "@/domains/sse/sse-manager.js";
+import { TaskCompletionRepository } from "@/domains/task-completion/task-completion-repository.js";
 import { diffInMilliseconds, startOfDay, startOfNextDay } from "@/lib/datetime-utils.js";
 import { Database, DbSchema } from "@org/database/index";
-import { TaskContract } from "@org/domain/api/Contracts";
+import { SseContract, TaskContract } from "@org/domain/api/Contracts";
 import type { GetByIdParams } from "@org/domain/api/TaskContract";
 import { TaskId, type UserId } from "@org/domain/EntityIds";
 import { TaskNotFoundError } from "@org/domain/Errors";
@@ -10,7 +12,6 @@ import * as Array from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
-import { TaskCompletionRepository } from "../task-completion/task-completion-repository.js";
 import { calculateNextDate } from "./frequency-utils.js";
 
 export class TaskRepository extends Effect.Service<TaskRepository>()("TaskRepository", {
@@ -18,6 +19,7 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
     const db = yield* Database.Database;
     const taskCompletionRepository = yield* TaskCompletionRepository;
     const queue = yield* JobQueue;
+    const sseManager = yield* SseManager;
 
     const create = db.makeQuery(
       (
@@ -44,6 +46,13 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
                 Effect.retryOrElse(
                   Schedule.addDelay(Schedule.recurs(2), () => "100 millis"),
                   () => Effect.dieMessage("Failed to create task completion"),
+                ),
+                Effect.tap((taskCompletion) =>
+                  sseManager.notifyCurrentUser(
+                    new SseContract.TaskCompletionEvents.UpsertedTaskCompletion({
+                      taskCompletion,
+                    }),
+                  ),
                 ),
               ),
           ),
@@ -213,5 +222,5 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
       updateExecutionDate,
     };
   }),
-  dependencies: [TaskCompletionRepository.Default],
+  dependencies: [TaskCompletionRepository.Default, SseManager.Default],
 }) {}
