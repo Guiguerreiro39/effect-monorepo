@@ -1,22 +1,43 @@
 import { QueryData, useEffectMutation, useEffectQuery } from "@/lib/tanstack-query";
 import { ApiClient } from "@/services/common/api-client";
 import { SseContract, type TaskCompletionContract } from "@org/domain/api/Contracts";
+import type { TaskCompletionId } from "@org/domain/EntityIds";
 import * as Effect from "effect/Effect";
 import * as Match from "effect/Match";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
 
 export namespace TaskCompletionService {
-  const taskKey = QueryData.makeQueryKey("task-completion");
-  const taskHelpers = QueryData.makeHelpers<Array<TaskCompletionContract.TaskCompletion>>(taskKey);
+  const queryKeys = {
+    getAllTaskCompletions: QueryData.makeQueryKey<
+      string,
+      { payload: typeof TaskCompletionContract.GetTaskCompletionPayload.Type | undefined }
+    >("TaskCompletionService.getAllTaskCompletions"),
+    getTaskCompletionById: QueryData.makeQueryKey<string, { id: TaskCompletionId }>(
+      "TaskCompletionService.getTaskCompletionById",
+    ),
+  };
+
+  const helpers = {
+    getAllTaskCompletions: QueryData.makeHelpers<
+      Array<TaskCompletionContract.TaskCompletion>,
+      { payload: typeof TaskCompletionContract.GetTaskCompletionPayload.Type | undefined }
+    >(queryKeys.getAllTaskCompletions),
+    getTaskCompletionById: QueryData.makeHelpers<
+      TaskCompletionContract.TaskCompletion,
+      { id: TaskCompletionId }
+    >(queryKeys.getTaskCompletionById),
+  };
 
   const pendingOptimisticIds = Ref.unsafeMake(new Set<string>());
 
   export const useGetAllTaskCompletions = (
     payload: typeof TaskCompletionContract.GetTaskCompletionPayload.Type,
   ) => {
+    const queryKey = queryKeys.getAllTaskCompletions({ payload });
+
     return useEffectQuery({
-      queryKey: taskKey(),
+      queryKey,
       queryFn: () =>
         // eslint-disable-next-line react-hooks/rules-of-hooks
         ApiClient.use(({ client }) => client.taskCompletions.get({ payload })),
@@ -41,15 +62,9 @@ export namespace TaskCompletionService {
           }),
         );
 
-        return yield* client.taskCompletions.create({ payload: { ...payload, optimisticId } }).pipe(
-          Effect.tap((createdTaskCompletion) =>
-            taskHelpers.setData((draft) => {
-              if (!draft.some((t) => t.id === createdTaskCompletion.id)) {
-                draft.unshift(createdTaskCompletion);
-              }
-            }),
-          ),
-        );
+        return yield* client.taskCompletions
+          .create({ payload: { ...payload, optimisticId } })
+          .pipe(Effect.tap(() => helpers.getAllTaskCompletions.refetchAllQueries()));
       }, Effect.scoped),
       toastifySuccess: () => "Task created!",
     });
@@ -61,16 +76,8 @@ export namespace TaskCompletionService {
       mutationFn: (payload: TaskCompletionContract.UpdateTaskCompletionPayload) =>
         // eslint-disable-next-line react-hooks/rules-of-hooks
         ApiClient.use(({ client }) => client.taskCompletions.update({ payload })).pipe(
-          Effect.tap((updatedTask) =>
-            taskHelpers.setData((draft) => {
-              const index = draft.findIndex((t) => t.id === updatedTask.id);
-              if (index !== -1) {
-                draft[index] = updatedTask;
-              }
-            }),
-          ),
+          Effect.tap(() => helpers.getAllTaskCompletions.refetchAllQueries()),
         ),
-      toastifySuccess: () => "Task updated!",
     });
   };
 
@@ -80,14 +87,7 @@ export namespace TaskCompletionService {
       mutationFn: (payload: typeof TaskCompletionContract.DeleteTaskCompletionPayload.Type) =>
         // eslint-disable-next-line react-hooks/rules-of-hooks
         ApiClient.use(({ client }) => client.taskCompletions.delete({ payload })).pipe(
-          Effect.tap(() =>
-            taskHelpers.setData((draft) => {
-              const index = draft.findIndex((t) => t.id === payload.id);
-              if (index !== -1) {
-                draft.splice(index, 1);
-              }
-            }),
-          ),
+          Effect.tap(() => helpers.getAllTaskCompletions.refetchAllQueries()),
         ),
       toastifySuccess: () => "Task deleted!",
       toastifyErrors: {
@@ -112,23 +112,11 @@ export namespace TaskCompletionService {
               }
 
               // Updates cache with the newly obtained value
-              yield* taskHelpers.setData((draft) => {
-                const index = draft.findIndex((t) => t.id === upsertedEvent.taskCompletion.id);
-                if (index !== -1) {
-                  draft[index] = upsertedEvent.taskCompletion;
-                } else {
-                  draft.unshift(upsertedEvent.taskCompletion);
-                }
-              });
+              yield* helpers.getAllTaskCompletions.refetchAllQueries();
             }),
           ),
-          Match.tag("DeletedTaskCompletion", (deletedEvent) =>
-            taskHelpers.setData((draft) => {
-              const index = draft.findIndex((t) => t.id === deletedEvent.id);
-              if (index !== -1) {
-                draft.splice(index, 1);
-              }
-            }),
+          Match.tag("DeletedTaskCompletion", () =>
+            helpers.getAllTaskCompletions.refetchAllQueries(),
           ),
           Match.exhaustive,
         ),

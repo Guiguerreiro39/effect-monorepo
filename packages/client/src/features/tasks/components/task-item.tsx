@@ -1,34 +1,57 @@
 import { Badge, Button, Card, Checkbox, Skeleton } from "@/components/ui";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils/cn";
 import type { TaskCompletion } from "@org/domain/api/TaskCompletionContract";
+import { UserId } from "@org/domain/EntityIds";
+import { TaskCompletionStatus } from "@org/domain/Enums";
 import { FlameIcon, PencilIcon } from "lucide-react";
 import React from "react";
-import { TaskService } from "../api";
+import { toast } from "sonner";
+import { TaskCompletionService, TaskService } from "../api";
 import { EditTaskDialog } from "./edit-task-dialog";
 
 export const TaskItemRoot = ({ taskCompletion }: { taskCompletion: TaskCompletion }) => {
   const [checked, setChecked] = React.useState(false);
-  const { data: task, isLoading } = TaskService.useGetTaskById({ id: taskCompletion.taskId });
 
-  if (isLoading) return <TaskItemSkeleton />;
-  if (!task) return null;
+  const { data: session, isPending: isLoadingSession } = authClient.useSession();
+  const { data: task, isLoading } = TaskService.useGetTaskById({ id: taskCompletion.taskId });
+  const updateTaskCompletion = TaskCompletionService.useUpdateTaskCompletion();
+
+  if (isLoading && isLoadingSession) return <TaskItemSkeleton />;
+
+  if (!task || !session) return null;
+
+  const handleUpdateTaskCompletion = () => {
+    updateTaskCompletion.mutate(
+      {
+        id: taskCompletion.id,
+        completedBy: UserId.make(session.user.id),
+        status: TaskCompletionStatus.Completed,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Task completed!");
+        },
+      },
+    );
+  };
 
   return (
     <Card>
-      <label
-        htmlFor={`checkbox-${taskCompletion.id}`}
-        onClick={() => {
-          setChecked((prev) => !prev);
-        }}
-        className="w-full"
-      >
+      <label htmlFor={`checkbox-${taskCompletion.id}`} className="w-full">
         <Card.Content className="grid grid-cols-2 gap-4 px-4 py-2">
           <div className="flex items-center gap-4">
             <Checkbox
               id={`checkbox-${taskCompletion.id}`}
               checked={checked}
               onCheckedChange={(value) => {
-                setChecked(Boolean(value));
+                if (value === "indeterminate") return;
+
+                setChecked(value);
+
+                if (value) {
+                  handleUpdateTaskCompletion();
+                }
               }}
               className="size-5 rounded-full border-border data-[state=checked]:border-success-foreground data-[state=checked]:bg-success data-[state=checked]:text-success-foreground"
             />

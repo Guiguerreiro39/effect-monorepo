@@ -21,7 +21,7 @@ export const taskCompletion = pg.pgTable("task_completion", {
   taskId: pg.uuid("task_id").notNull(),
   status: taskCompletionStatusEnum("status").notNull().default(TaskCompletionStatus.Pending),
   experience: pg.smallint("experience").notNull(),
-  completedBy: pg.uuid("user_id"),
+  completedBy: pg.text("user_id"),
 
   createdAt: pg.timestamp("created_at").defaultNow().notNull(),
   updatedAt: pg

@@ -7,6 +7,7 @@ import { useForm } from "@tanstack/react-form";
 import * as Schema from "effect/Schema";
 import { PlusIcon } from "lucide-react";
 import React from "react";
+import { toast } from "sonner";
 import { TaskService } from "../api";
 
 type Props = React.PropsWithChildren<{
@@ -27,7 +28,11 @@ export const EditTaskDialog = ({ children, task }: Props) => {
     }),
     onSubmit: async ({ formApi, value }) => {
       const payload = Schema.decodeSync(TaskContract.UpdateTaskPayload)(value);
-      await updateTaskMutation.mutateAsync(payload);
+      await updateTaskMutation.mutateAsync(payload, {
+        onSuccess: () => {
+          toast("Task updated!");
+        },
+      });
 
       // cleanup
       setOpen(false);
