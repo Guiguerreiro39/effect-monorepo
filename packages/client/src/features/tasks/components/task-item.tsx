@@ -1,5 +1,5 @@
 import { Badge, Button, Card, Checkbox, Skeleton } from "@/components/ui";
-import { authClient } from "@/lib/auth-client";
+import { UserService } from "@/features/user/api";
 import { cn } from "@/lib/utils/cn";
 import type { TaskCompletion } from "@org/domain/api/TaskCompletionContract";
 import { UserId } from "@org/domain/EntityIds";
@@ -13,19 +13,19 @@ import { EditTaskDialog } from "./edit-task-dialog";
 export const TaskItemRoot = ({ taskCompletion }: { taskCompletion: TaskCompletion }) => {
   const [checked, setChecked] = React.useState(false);
 
-  const { data: session, isPending: isLoadingSession } = authClient.useSession();
+  const user = UserService.useGetCurrentUser();
   const { data: task, isLoading } = TaskService.useGetTaskById({ id: taskCompletion.taskId });
   const updateTaskCompletion = TaskCompletionService.useUpdateTaskCompletion();
 
-  if (isLoading && isLoadingSession) return <TaskItemSkeleton />;
+  if (isLoading) return <TaskItemSkeleton />;
 
-  if (!task || !session) return null;
+  if (!task) return null;
 
   const handleUpdateTaskCompletion = () => {
     updateTaskCompletion.mutate(
       {
         id: taskCompletion.id,
-        completedBy: UserId.make(session.user.id),
+        completedBy: UserId.make(user.id),
         status: TaskCompletionStatus.Completed,
       },
       {

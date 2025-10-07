@@ -10,5 +10,7 @@ export const Route = createFileRoute("/_authenticated")({
     if (session === null || session.session.expiresAt.getTime() < now) {
       throw redirect({ to: "/sign-in" });
     }
+
+    return { session };
   },
 });
