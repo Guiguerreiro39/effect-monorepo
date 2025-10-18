@@ -1,25 +1,27 @@
-import { SseManager } from "@/domains/sse/sse-manager.js";
-import { TaskCompletionRepository } from "@/domains/task-completion/task-completion-repository.js";
 import { diffInMilliseconds, startOfDay, startOfNextDay } from "@/lib/datetime-utils.js";
 import { Database, DbSchema } from "@org/database/index";
-import { SseContract, TaskContract } from "@org/domain/api/Contracts";
+import { TaskContract } from "@org/domain/api/Contracts";
 import type { GetByIdParams } from "@org/domain/api/TaskContract";
 import { TaskId, type UserId } from "@org/domain/EntityIds";
-import { TaskNotFoundError } from "@org/domain/Errors";
+import { ActivityType, TaskActivityStatus } from "@org/domain/Enums";
+import { TaskNotFoundError, TaskUpdateNotAllowed } from "@org/domain/Errors";
+import { CurrentUser } from "@org/domain/Policy";
 import { JobQueue } from "@org/domain/Queue";
 import * as d from "drizzle-orm";
 import * as Array from "effect/Array";
 import * as Effect from "effect/Effect";
-import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
-import { calculateNextDate } from "./frequency-utils.js";
+import { ActivityRepository } from "../activity/activity-repository.js";
+import { UserMetadataRepository } from "../user-metadata/user-metadata-repository.js";
+import { calculateNextDate } from "./utils/frequency.js";
+import { createHash } from "./utils/hash-identifier.js";
 
 export class TaskRepository extends Effect.Service<TaskRepository>()("TaskRepository", {
   effect: Effect.gen(function* () {
     const db = yield* Database.Database;
-    const taskCompletionRepository = yield* TaskCompletionRepository;
+    const activityRepository = yield* ActivityRepository;
+    const userMetadataRepository = yield* UserMetadataRepository;
     const queue = yield* JobQueue;
-    const sseManager = yield* SseManager;
 
     const create = db.makeQuery(
       (
@@ -28,42 +30,29 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
           createdBy: UserId;
         },
       ) =>
-        execute((client) =>
-          client
-            .insert(DbSchema.task)
-            .values({ ...input, nextExecutionDate: calculateNextDate(input.frequency, new Date()) })
-            .returning(),
-        ).pipe(
+        Effect.gen(function* () {
+          const hash = yield* createHash({
+            title: input.title,
+            executionDate: startOfDay(new Date()),
+          });
+
+          return yield* execute((client) =>
+            client
+              .insert(DbSchema.task)
+              .values({
+                ...input,
+                hashIdentifier: hash,
+              })
+              .returning(),
+          );
+        }).pipe(
           Effect.flatMap(Array.head),
           Effect.flatMap(Schema.decode(TaskContract.Task)),
-          Effect.tap((task) =>
-            taskCompletionRepository
-              .create({
-                taskId: task.id,
-                experience: task.experience,
-              })
-              .pipe(
-                Effect.retryOrElse(
-                  Schedule.addDelay(Schedule.recurs(2), () => "100 millis"),
-                  () => Effect.dieMessage("Failed to create task completion"),
-                ),
-                Effect.tap((taskCompletion) =>
-                  sseManager.notifyCurrentUser(
-                    new SseContract.TaskCompletionEvents.UpsertedTaskCompletion({
-                      taskCompletion,
-                    }),
-                  ),
-                ),
-              ),
-          ),
-          Effect.tap((task) =>
-            queue.enqueueDelayed(task, diffInMilliseconds(new Date(), task.nextExecutionDate)),
-          ),
           Effect.catchTags({
             DatabaseError: Effect.die,
             NoSuchElementException: () => Effect.dieMessage(""),
             ParseError: Effect.die,
-            JobQueueEnqueueJobError: Effect.die,
+            HashIdentifierError: Effect.die,
           }),
           Effect.withSpan("TaskRepository.create"),
         ),
@@ -92,51 +81,6 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
         ),
     );
 
-    const update = db.makeQuery((execute, input: typeof TaskContract.UpdateTaskPayload.Type) =>
-      execute((client) =>
-        client.update(DbSchema.task).set(input).where(d.eq(DbSchema.task.id, input.id)).returning(),
-      ).pipe(
-        Effect.flatMap(Array.head),
-        Effect.flatMap(Schema.decode(TaskContract.Task)),
-        Effect.tap((task) =>
-          updateExecutionDate({
-            id: task.id,
-            nextExecutionDate: calculateNextDate(task.frequency, task.prevExecutionDate),
-            prevExecutionDate: task.prevExecutionDate,
-          }),
-        ),
-        Effect.tap((task) => {
-          return queue.updateJob(task, diffInMilliseconds(new Date(), task.nextExecutionDate));
-        }),
-        Effect.tap((task) => {
-          const taskCompletions = taskCompletionRepository.findManyPendingByTaskId(task.id);
-
-          return taskCompletions.pipe(
-            Effect.flatMap(
-              Effect.forEach((taskCompletion) => {
-                return taskCompletionRepository.update({
-                  id: taskCompletion.id,
-                  experience: task.experience,
-                });
-              }),
-            ),
-          );
-        }),
-        Effect.catchTags({
-          DatabaseError: Effect.die,
-          NoSuchElementException: () =>
-            new TaskNotFoundError({
-              message: `Task with id ${input.id} not found`,
-            }),
-          ParseError: Effect.die,
-          TaskCompletionNotFoundError: Effect.die,
-          JobQueueCancelJobError: Effect.die,
-          JobQueueEnqueueJobError: Effect.die,
-        }),
-        Effect.withSpan("TaskRepository.update"),
-      ),
-    );
-
     const findById = db.makeQuery((execute, input: typeof GetByIdParams.Type) =>
       execute((client) =>
         client.query.task.findFirst({
@@ -160,19 +104,118 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
       ),
     );
 
+    const update = db.makeQuery((execute, input: typeof TaskContract.UpdateTaskPayload.Type) =>
+      Effect.gen(function* () {
+        const currentTask = yield* findById({ id: input.id }).pipe(
+          Effect.catchTags({
+            TaskNotFoundError: Effect.die,
+          }),
+        );
+
+        if (
+          input.experience &&
+          currentTask.experience !== input.experience &&
+          (input.isCompleted || currentTask.isCompleted)
+        ) {
+          return yield* Effect.fail(
+            new TaskUpdateNotAllowed({
+              message: `Task with id ${input.id} cannot be updated since it is currently completed`,
+            }),
+          );
+        }
+
+        return yield* execute((client) =>
+          client
+            .update(DbSchema.task)
+            .set(input)
+            .where(d.eq(DbSchema.task.id, input.id))
+            .returning(),
+        ).pipe(
+          Effect.flatMap(Array.head),
+          Effect.flatMap(Schema.decode(TaskContract.Task)),
+          Effect.tap((task) =>
+            Effect.gen(function* () {
+              const nextExecutionDate = calculateNextDate(task.frequency, new Date());
+              const currentUser = yield* CurrentUser;
+              const activity = yield* activityRepository.findByHashIdentifier({
+                hashIdentifier: task.hashIdentifier,
+              });
+
+              if (task.isCompleted && Array.isEmptyReadonlyArray(activity)) {
+                yield* updateExecutionDate({
+                  id: task.id,
+                  nextExecutionDate,
+                });
+
+                yield* activityRepository.create({
+                  taskId: task.id,
+                  status: TaskActivityStatus.Completed,
+                  experience: task.experience,
+                  title: task.title,
+                  completedBy: currentUser.userId,
+                  hashIdentifier: task.hashIdentifier,
+                  type: ActivityType.Task,
+                });
+
+                yield* userMetadataRepository.update({
+                  experience: currentUser.metadata.experience + task.experience,
+                  userId: currentUser.userId,
+                });
+
+                yield* queue.enqueueDelayed(
+                  task,
+                  diffInMilliseconds(new Date(), nextExecutionDate),
+                );
+              }
+
+              if (!task.isCompleted && Array.isNonEmptyReadonlyArray(activity)) {
+                yield* updateExecutionDate({
+                  id: task.id,
+                  nextExecutionDate: startOfDay(new Date()),
+                });
+
+                yield* userMetadataRepository.update({
+                  experience: currentUser.metadata.experience - task.experience,
+                  userId: currentUser.userId,
+                });
+
+                yield* activityRepository.del({ id: activity[0].id });
+
+                yield* queue.cancelJob(task.id);
+              }
+            }),
+          ),
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            NoSuchElementException: () =>
+              new TaskNotFoundError({
+                message: `Task with id ${input.id} not found`,
+              }),
+
+            ParseError: Effect.die,
+            UserMetadataNotFoundError: Effect.die,
+            JobQueueCancelJobError: Effect.die,
+            JobQueueEnqueueJobError: Effect.die,
+            ActivityNotFoundError: Effect.die,
+          }),
+          Effect.withSpan("TaskRepository.update"),
+        );
+      }),
+    );
+
     const findAll = db.makeQuery((execute, input: typeof TaskContract.GetTasksUrlParams.Type) =>
       execute((client) =>
         client.query.task.findMany({
           where: (tasks, { and, gte, lte }) =>
-            input.from
+            input.executionDate
               ? and(
                   gte(
                     tasks.nextExecutionDate,
-                    startOfDay(Schema.decodeSync(Schema.Date)(input.from)),
+                    startOfDay(Schema.decodeSync(Schema.Date)(input.executionDate)),
                   ),
                   lte(
                     tasks.nextExecutionDate,
-                    startOfNextDay(Schema.decodeSync(Schema.Date)(input.from)),
+                    startOfNextDay(Schema.decodeSync(Schema.Date)(input.executionDate)),
                   ),
                 )
               : undefined,
@@ -222,5 +265,5 @@ export class TaskRepository extends Effect.Service<TaskRepository>()("TaskReposi
       updateExecutionDate,
     };
   }),
-  dependencies: [TaskCompletionRepository.Default, SseManager.Default],
+  dependencies: [ActivityRepository.Default, UserMetadataRepository.Default],
 }) {}

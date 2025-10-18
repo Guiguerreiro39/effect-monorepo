@@ -1,37 +1,20 @@
 import { Badge, Card } from "@/components/ui";
-import { CheckIcon, FlameIcon, StarIcon } from "lucide-react";
-
-const activities = [
-  {
-    id: 1,
-    action: "completed",
-    chore: "Wash the dishes",
-    time: "2 hours ago",
-    days: 2,
-    title: "Unlocked Cleaning Novice",
-    xp: 10,
-  },
-  {
-    id: 2,
-    action: "streak",
-    chore: "Wash the dishes",
-    time: "2 hours ago",
-    days: 2,
-    title: "Unlocked Cleaning Novice",
-    xp: 10,
-  },
-  {
-    id: 3,
-    action: "milestone",
-    chore: "Wash the dishes",
-    time: "2 hours ago",
-    days: 2,
-    title: "Unlocked Cleaning Novice",
-    xp: 10,
-  },
-];
+import { ActivityType } from "@org/domain/Enums";
+import * as Array from "effect/Array";
+import { ArrowUpIcon, CheckIcon, StarIcon } from "lucide-react";
+import { useGetAllActivities } from "../api";
 
 export const RecentActivity = () => {
+  const { data: activities, isLoading } = useGetAllActivities();
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!activities || Array.isEmptyReadonlyArray(activities)) {
+    return "No data";
+  }
+
   return (
     <Card>
       <Card.Header>
@@ -41,7 +24,7 @@ export const RecentActivity = () => {
         <div className="space-y-3">
           {activities.map((activity) => (
             <div key={activity.id} className="border-b border-border pb-3 last:border-0">
-              {activity.action === "completed" && (
+              {activity.type === ActivityType.Task && (
                 <div className="flex items-center gap-4">
                   <Badge variant="success" className="size-8 rounded-full">
                     <CheckIcon />
@@ -49,32 +32,34 @@ export const RecentActivity = () => {
 
                   <div className="flex-1">
                     <p className="text-sm">
-                      Completed <span className="font-medium">{activity.chore}</span>
+                      Completed <span className="font-medium">{activity.title}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {activity.createdAt.toLocaleString()}
+                    </p>
                   </div>
                   <span className="text-xs font-medium text-success-foreground">
-                    +{activity.xp} XP
+                    +{activity.experience} XP
                   </span>
                 </div>
               )}
-              {activity.action === "streak" && (
+              {activity.type === ActivityType.LevelUp && (
                 <div className="flex items-center gap-4">
-                  <Badge variant="primary" className="size-8 rounded-full">
-                    <FlameIcon />
+                  <Badge variant="success" className="size-8 rounded-full">
+                    <ArrowUpIcon />
                   </Badge>
 
                   <div className="flex-1">
                     <p className="text-sm">
-                      <span className="font-medium">{activity.days}-day streak</span> for{" "}
-                      {activity.chore}
+                      <span className="font-medium">Level {activity.level}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {activity.createdAt.toLocaleString()}
+                    </p>
                   </div>
-                  <span className="text-xs font-medium text-primary">+{activity.xp} XP</span>
                 </div>
               )}
-              {activity.action === "milestone" && (
+              {activity.type === ActivityType.Reward && (
                 <div className="flex items-center gap-4">
                   <Badge variant="secondary" className="size-8 rounded-full">
                     <StarIcon />
@@ -84,9 +69,10 @@ export const RecentActivity = () => {
                     <p className="text-sm">
                       Unlocked <span className="font-medium">{activity.title}</span> milestone
                     </p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {activity.createdAt.toLocaleString()}
+                    </p>
                   </div>
-                  <span className="text-xs font-medium text-secondary">+{activity.xp} XP</span>
                 </div>
               )}
             </div>

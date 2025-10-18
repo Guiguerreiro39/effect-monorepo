@@ -1,16 +1,13 @@
 import { Card, Skeleton } from "@/components/ui";
-import { TaskCompletionStatus } from "@org/domain/Enums";
-import { TaskCompletionService } from "../api";
+import * as Array from "effect/Array";
+import { useGetAllTasks } from "../api";
 import { TaskItem } from "./task-item";
 
 export const TasksList = () => {
-  const { data: pendingTaskCompletions, isLoading } =
-    TaskCompletionService.useGetAllTaskCompletions({
-      status: TaskCompletionStatus.Pending,
-    });
+  const { data: tasks, isLoading } = useGetAllTasks();
 
   if (isLoading) return <TaskListSkeleton />;
-  if (!pendingTaskCompletions || pendingTaskCompletions.length === 0) return <EmptyTaskList />;
+  if (!tasks || Array.isEmptyReadonlyArray(tasks)) return <EmptyTaskList />;
 
   return (
     <Card>
@@ -18,8 +15,8 @@ export const TasksList = () => {
         <Card.Title>My tasks</Card.Title>
       </Card.Header>
       <Card.Content className="space-y-2">
-        {pendingTaskCompletions.map((taskCompletion) => (
-          <TaskItem.Root key={taskCompletion.id} taskCompletion={taskCompletion} />
+        {tasks.map((task) => (
+          <TaskItem.Root key={task.id} task={task} />
         ))}
       </Card.Content>
     </Card>

@@ -7,13 +7,13 @@ import { useForm } from "@tanstack/react-form";
 import * as Schema from "effect/Schema";
 import { PlusIcon } from "lucide-react";
 import React from "react";
-import { TaskService } from "../api";
+import { useCreateTask } from "../api";
 
 type Props = React.PropsWithChildren;
 
 export const CreateTaskDialog = ({ children }: Props) => {
   const [open, setOpen] = React.useState(false);
-  const createTaskMutation = TaskService.useCreateTask();
+  const createTaskMutation = useCreateTask();
 
   const form = useForm({
     ...makeFormOptions({
@@ -28,11 +28,12 @@ export const CreateTaskDialog = ({ children }: Props) => {
     }),
     onSubmit: async ({ formApi, value }) => {
       const payload = Schema.decodeSync(TaskContract.CreateTaskPayload)(value);
-      await createTaskMutation.mutateAsync(payload);
-
-      // cleanup
-      setOpen(false);
-      formApi.reset();
+      await createTaskMutation.mutateAsync(payload, {
+        onSettled: () => {
+          setOpen(false);
+          formApi.reset();
+        },
+      });
     },
   });
 

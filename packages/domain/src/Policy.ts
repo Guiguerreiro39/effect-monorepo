@@ -3,6 +3,7 @@ import { type NonEmptyReadonlyArray } from "effect/Array";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import type { UserMetadata } from "./api/UserMetadataContract.js";
 import * as CustomHttpApiError from "./CustomHttpApiError.js";
 import { type UserId } from "./EntityIds.js";
 import * as internal from "./internal/policy.js";
@@ -30,6 +31,7 @@ export class CurrentUser extends Context.Tag("CurrentUser")<
     readonly sessionId: string;
     readonly userId: UserId;
     readonly permissions: Set<Permission>;
+    readonly metadata: UserMetadata;
   }
 >() {}
 

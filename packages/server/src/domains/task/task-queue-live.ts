@@ -2,13 +2,11 @@ import { EnvVars } from "@/common/env-vars.js";
 import { diffInMilliseconds } from "@/lib/datetime-utils.js";
 import { TaskContract } from "@org/domain/api/Contracts";
 import type { TaskId } from "@org/domain/EntityIds";
-import { TaskCompletionStatus } from "@org/domain/Enums";
 import {
   JobQueue,
   JobQueueCancelJobError,
   JobQueueEnqueueJobError,
   JobQueueStartWorkerError,
-  JobQueueUpdateJobError,
 } from "@org/domain/Queue";
 import { Queue, Worker, type Job } from "bullmq";
 import * as Effect from "effect/Effect";
@@ -16,9 +14,8 @@ import { pipe } from "effect/Function";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import { Redis } from "ioredis";
-import { TaskCompletionRepository } from "../task-completion/task-completion-repository.js";
-import { calculateNextDate } from "./frequency-utils.js";
 import { TaskRepository } from "./task-repository.js";
+import { createHash } from "./utils/hash-identifier.js";
 
 const QUEUE_NAME = "task-reschedule";
 const JOB_NAME = "reschedule-task";
@@ -57,10 +54,13 @@ const make = Effect.gen(function* () {
 
         if (job && (state === "waiting" || state === "delayed" || state === "failed")) {
           await job.remove();
+          return;
         }
+
+        throw new Error(`Job ${jobId} is not in a cancelable state`);
       },
       catch: (error) => new JobQueueCancelJobError({ message: `Failed to cancel job: ${error}` }),
-    });
+    }).pipe(Effect.tap(Effect.log("[Task Queue]: job cancelled")));
 
   const updateJob = (task: TaskContract.Task, newDelay: number) =>
     pipe(
@@ -109,52 +109,26 @@ export const TaskQueueWorkerLive = Layer.scopedDiscard(
   Effect.gen(function* () {
     const queue = yield* JobQueue;
     const taskRepository = yield* TaskRepository;
-    const taskCompletionRepository = yield* TaskCompletionRepository;
 
     const processJob = (job: Job<{ task: TaskContract.Task }>) =>
       Effect.gen(function* () {
         const decode = Schema.decode(TaskContract.UpdateTaskExecutionDatePayload);
 
-        const updatedTask = yield* taskRepository
+        yield* taskRepository
           .updateExecutionDate(
             yield* decode({
               id: job.data.task.id,
-              nextExecutionDate: calculateNextDate(
-                job.data.task.frequency,
-                job.data.task.nextExecutionDate,
-              ),
+              hashIdentifier: yield* createHash({
+                title: job.data.task.title,
+                executionDate: job.data.task.nextExecutionDate,
+              }),
               prevExecutionDate: job.data.task.nextExecutionDate,
+              isCompleted: false,
             }),
           )
           .pipe(Effect.withSpan("JobQueueWorkerLive.updateTaskExecutionDate"));
-
-        yield* taskCompletionRepository.findManyPendingByTaskId(job.data.task.id).pipe(
-          Effect.flatMap((taskCompletions) =>
-            Effect.forEach(taskCompletions, (taskCompletion) =>
-              taskCompletionRepository
-                .update({
-                  id: taskCompletion.id,
-                  status: TaskCompletionStatus.Failed,
-                })
-                .pipe(Effect.withSpan("JobQueueWorkerLive.updateTaskCompletion")),
-            ),
-          ),
-        );
-
-        yield* taskCompletionRepository
-          .create({
-            taskId: job.data.task.id,
-            experience: job.data.task.experience,
-          })
-          .pipe(Effect.withSpan("JobQueueWorkerLive.createTaskCompletion"));
-
-        yield* Effect.tryPromise({
-          try: () => job.updateData({ task: updatedTask }),
-          catch: () =>
-            new JobQueueUpdateJobError({ message: "Failed to update job: " + job.data.task.id }),
-        });
       });
 
     return yield* queue.startWorker(processJob);
   }),
-).pipe(Layer.provide([TaskQueueLive, TaskRepository.Default, TaskCompletionRepository.Default]));
+).pipe(Layer.provide([TaskQueueLive, TaskRepository.Default]));

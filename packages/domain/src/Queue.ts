@@ -7,7 +7,7 @@ import * as Schema from "effect/Schema";
 import type { Scope } from "effect/Scope";
 import type { TaskContract } from "./api/Contracts.js";
 import type { TaskId } from "./EntityIds.js";
-import type { TaskCompletionNotFoundError, TaskNotFoundError } from "./Errors.js";
+import type { HashIdentifierError, TaskNotFoundError } from "./Errors.js";
 
 export class JobQueueEnqueueJobError extends Schema.TaggedError<JobQueueEnqueueJobError>(
   "JobQueueEnqueueJobError",
@@ -45,7 +45,7 @@ export class JobQueue extends Context.Tag("JobQueue")<
         job: Job<{ task: TaskContract.Task }>,
       ) => Effect.Effect<
         void,
-        TaskNotFoundError | ParseError | JobQueueUpdateJobError | TaskCompletionNotFoundError
+        TaskNotFoundError | ParseError | JobQueueUpdateJobError | HashIdentifierError
       >,
     ) => Effect.Effect<
       RuntimeFiber<Worker<{ task: TaskContract.Task }, unknown, string>, JobQueueStartWorkerError>,

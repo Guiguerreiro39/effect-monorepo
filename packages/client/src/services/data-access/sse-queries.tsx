@@ -1,4 +1,6 @@
-import { TaskCompletionService, TaskService } from "@/features/tasks/api";
+import { activitySseStream } from "@/features/activity/api";
+import { taskSseStream } from "@/features/tasks/api";
+import { userMetadataSseStream } from "@/features/user/api/user-metadata-service";
 import { SseContract } from "@org/domain/api/Contracts";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -67,8 +69,9 @@ export namespace SseQueries {
           );
 
           const mergedStream = keepAliveStream.pipe(
-            Stream.merge(TaskService.stream(dataStream)),
-            Stream.merge(TaskCompletionService.stream(dataStream)),
+            Stream.merge(taskSseStream(dataStream)),
+            Stream.merge(activitySseStream(dataStream)),
+            Stream.merge(userMetadataSseStream(dataStream)),
           );
 
           yield* Stream.runDrain(mergedStream);

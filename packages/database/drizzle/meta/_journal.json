@@ -71,6 +71,27 @@
       "when": 1759538897651,
       "tag": "0009_orange_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1760395677788,
+      "tag": "0010_far_omega_flight",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1760486602822,
+      "tag": "0011_oval_ricochet",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1760782849614,
+      "tag": "0012_flippant_red_ghost",
+      "breakpoints": true
     }
   ]
 }

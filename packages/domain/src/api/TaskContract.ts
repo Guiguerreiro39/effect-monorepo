@@ -3,7 +3,7 @@ import * as HttpApiGroup from "@effect/platform/HttpApiGroup";
 import * as Schema from "effect/Schema";
 import { TaskId, UserId } from "../EntityIds.js";
 import { TaskFrequency } from "../Enums.js";
-import { TaskNotFoundError } from "../Errors.js";
+import { TaskNotFoundError, TaskUpdateNotAllowed } from "../Errors.js";
 import { AuthMiddleware } from "../Policy.js";
 import { DateFromStringOrSelf } from "../SchemaUtils.js";
 
@@ -13,9 +13,11 @@ export class Task extends Schema.Class<Task>("Task")({
   description: Schema.NullishOr(Schema.Trim.pipe(Schema.nonEmptyString(), Schema.maxLength(500))),
   frequency: Schema.Enums(TaskFrequency),
   experience: Schema.Number.pipe(Schema.nonNegative(), Schema.lessThan(500)),
+  isCompleted: Schema.Boolean,
   createdBy: UserId,
+  hashIdentifier: Schema.String,
   nextExecutionDate: DateFromStringOrSelf,
-  prevExecutionDate: DateFromStringOrSelf,
+  prevExecutionDate: Schema.NullishOr(DateFromStringOrSelf),
 }) {}
 
 export class CreateTaskPayload extends Schema.Class<CreateTaskPayload>("CreateTaskPayload")({
@@ -31,6 +33,7 @@ export class CreateTaskPayload extends Schema.Class<CreateTaskPayload>("CreateTa
 export class UpdateTaskPayload extends Schema.Class<UpdateTaskPayload>("UpdateTaskPayload")({
   id: TaskId,
   title: Schema.optional(Task.fields.title),
+  isCompleted: Schema.optional(Task.fields.isCompleted),
   description: Schema.optional(Task.fields.description),
   frequency: Schema.optional(Task.fields.frequency),
   experience: Schema.optional(Task.fields.experience),
@@ -40,12 +43,14 @@ export class UpdateTaskExecutionDatePayload extends Schema.Class<UpdateTaskExecu
   "UpdateTaskExecutionDatePayload",
 )({
   id: TaskId,
-  nextExecutionDate: Task.fields.nextExecutionDate,
-  prevExecutionDate: Task.fields.prevExecutionDate,
+  isCompleted: Schema.optional(Task.fields.isCompleted),
+  hashIdentifier: Schema.optional(Task.fields.hashIdentifier),
+  nextExecutionDate: Schema.optional(Task.fields.nextExecutionDate),
+  prevExecutionDate: Schema.optional(Task.fields.prevExecutionDate),
 }) {}
 
 export class GetTasksUrlParams extends Schema.Class<GetTasksUrlParams>("GetTasksUrlParams")({
-  from: Schema.optional(Schema.String),
+  executionDate: Schema.optional(Schema.String),
 }) {}
 
 export class GetByIdParams extends Schema.Class<GetByIdParams>("GetByIdParams")({
@@ -67,6 +72,7 @@ export class Group extends HttpApiGroup.make("tasks")
   .add(
     HttpApiEndpoint.put("update", "/:id")
       .addError(TaskNotFoundError)
+      .addError(TaskUpdateNotAllowed)
       .addSuccess(Task)
       .setPayload(UpdateTaskPayload),
   )

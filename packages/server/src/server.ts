@@ -16,16 +16,17 @@ import { createServer } from "node:http";
 import { Api } from "./api.js";
 import { CorsLive } from "./common/cors.js";
 import { EnvVars } from "./common/env-vars.js";
+import { ActivityLive } from "./domains/activity/activity-live.js";
 import { AuthLive } from "./domains/auth/auth-live.js";
 import { AuthMiddlewareLive } from "./domains/middlewares/auth-middleware-live.js";
 import { SseLive } from "./domains/sse/sse-live.js";
-import { TaskCompletionLive } from "./domains/task-completion/task-completion-live.js";
 import { TaskLive } from "./domains/task/task-live.js";
 import { TaskQueueLive, TaskQueueWorkerLive } from "./domains/task/task-queue-live.js";
+import { UserMetadataLive } from "./domains/user-metadata/user-metadata-live.js";
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
   Layer.merge(TaskQueueWorkerLive),
-  Layer.provide([SseLive, AuthLive, TaskLive, TaskCompletionLive]),
+  Layer.provide([SseLive, AuthLive, TaskLive, ActivityLive, UserMetadataLive]),
   Layer.provide([AuthMiddlewareLive]),
   Layer.provide([TaskQueueLive]),
 );

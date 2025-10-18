@@ -11,10 +11,40 @@ export class TaskNotFoundError extends Schema.TaggedError<TaskNotFoundError>("Ta
   }),
 ) {}
 
-export class TaskCompletionNotFoundError extends Schema.TaggedError<TaskCompletionNotFoundError>(
-  "TaskCompletionNotFoundError",
+export class TaskUpdateNotAllowed extends Schema.TaggedError<TaskUpdateNotAllowed>(
+  "TaskUpdateNotAllowed",
 )(
-  "TaskCompletionNotFoundError",
+  "TaskUpdateNotAllowed",
+  {
+    message: Schema.String,
+  },
+  HttpApiSchema.annotations({
+    status: 417,
+  }),
+) {}
+
+export class ActivityNotFoundError extends Schema.TaggedError<ActivityNotFoundError>(
+  "ActivityNotFoundError",
+)(
+  "ActivityNotFoundError",
+  {
+    message: Schema.String,
+  },
+  HttpApiSchema.annotations({
+    status: 404,
+  }),
+) {}
+
+export class HashIdentifierError extends Schema.TaggedError<HashIdentifierError>(
+  "HashIdentifierError",
+)("HashIdentifierError", {
+  message: Schema.String,
+}) {}
+
+export class UserMetadataNotFoundError extends Schema.TaggedError<UserMetadataNotFoundError>(
+  "UserMetadataNotFoundError",
+)(
+  "UserMetadataNotFoundError",
   {
     message: Schema.String,
   },

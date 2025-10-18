@@ -1,8 +1,8 @@
 import { relations } from "drizzle-orm";
 import * as pg from "drizzle-orm/pg-core";
 import { utcNow, utcToday } from "../lib/utils.js";
+import { activity } from "./activity-table.js";
 import { user } from "./auth-table.js";
-import { taskCompletion } from "./task-completion-table.js";
 
 enum TaskFrequency {
   Daily = "daily",
@@ -26,8 +26,12 @@ export const task = pg.pgTable("task", {
   description: pg.varchar("description", { length: 500 }),
   frequency: frequencyEnum("frequency").notNull(),
   experience: pg.smallint("experience").notNull(),
-  nextExecutionDate: pg.timestamp("next_execution_date").notNull(),
-  prevExecutionDate: pg.timestamp("prev_execution_date").notNull().$default(utcToday),
+
+  isCompleted: pg.boolean("is_completed").notNull().default(false),
+  hashIdentifier: pg.varchar("hash_identifier").notNull(),
+
+  nextExecutionDate: pg.timestamp("next_execution_date").notNull().$default(utcToday),
+  prevExecutionDate: pg.timestamp("prev_execution_date"),
 
   createdAt: pg.timestamp("created_at").defaultNow().notNull(),
   updatedAt: pg
@@ -42,5 +46,5 @@ export const taskRelations = relations(task, ({ many, one }) => ({
     fields: [task.createdBy],
     references: [user.id],
   }),
-  taskCompletions: many(taskCompletion),
+  activities: many(activity),
 }));

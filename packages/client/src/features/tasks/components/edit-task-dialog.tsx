@@ -8,7 +8,7 @@ import * as Schema from "effect/Schema";
 import { PlusIcon } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
-import { TaskService } from "../api";
+import { useUpdateTask } from "../api";
 
 type Props = React.PropsWithChildren<{
   task: TaskContract.Task;
@@ -16,7 +16,7 @@ type Props = React.PropsWithChildren<{
 
 export const EditTaskDialog = ({ children, task }: Props) => {
   const [open, setOpen] = React.useState(false);
-  const updateTaskMutation = TaskService.useUpdateTask();
+  const updateTaskMutation = useUpdateTask();
 
   const form = useForm({
     ...makeFormOptions({
@@ -32,11 +32,11 @@ export const EditTaskDialog = ({ children, task }: Props) => {
         onSuccess: () => {
           toast("Task updated!");
         },
+        onSettled: () => {
+          setOpen(false);
+          formApi.reset();
+        },
       });
-
-      // cleanup
-      setOpen(false);
-      formApi.reset();
     },
   });
 

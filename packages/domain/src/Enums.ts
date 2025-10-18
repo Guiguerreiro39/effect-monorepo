@@ -5,8 +5,13 @@ export enum TaskFrequency {
   OneTime = "one-time",
 }
 
-export enum TaskCompletionStatus {
-  Pending = "pending",
+export enum TaskActivityStatus {
   Completed = "completed",
   Failed = "failed",
+}
+
+export enum ActivityType {
+  Task = "task",
+  LevelUp = "levelUp",
+  Reward = "reward",
 }
